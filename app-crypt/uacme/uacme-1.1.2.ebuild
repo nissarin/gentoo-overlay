@@ -10,7 +10,7 @@ SRC_URI="https://codeload.github.com/ndilieto/${PN}/tar.gz/v${PV} -> ${P}.tar.gz
 LICENSE="GPL-3"
 SLOT="0"
 KEYWORDS="~amd64 ~x86"
-IUSE="+ualpn docs openssl gnutls mbedtls"
+IUSE="+ualpn docs openssl +gnutls mbedtls"
 REQUIRED_USE="
 	ualpn? ( gnutls )
 	^^ ( openssl gnutls mbedtls )
@@ -45,4 +45,9 @@ src_configure() {
 	)
 
 	econf "${myeconfargs[@]}" 
+}
+
+
+pkg_postinst() {
+	elog "Examples of hook scripts can be found in ${EPREFIX}/usr/share/${PN} directory."
 }
