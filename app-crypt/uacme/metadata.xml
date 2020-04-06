@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE pkgmetadata SYSTEM "http://www.gentoo.org/dtd/metadata.dtd">
+<pkgmetadata>
+<maintainer type="person">
+<name>Wojciech Pyczak</name>
+<email>nissarin@gmail.com</email>
+</maintainer>
+<longdescription>
+uacme is ACMEv2 client written in plain C, focusing on handling the protocol 
+while leaving it up to the user to setup and complete the challenge,
+either by hand or by providing program or script to be executed.
+Program supports Elliptic Curve certificates and allows to use all popular 
+challenge methods (http-01, dns-01 and tls-alpn-01).
+It can be build with GnuTLS, OpenSSL or mbedTLS as cypto library, allowing it
+to be used on variety of systems, including embedded devices. 
+The optional tls-alpn-01 challenge support requires the use of GnuTLS.
+</longdescription>
+<use>
+<flag name="openssl">Use <pkg>dev-libs/openssl</pkg></flag>
+<flag name="gnutls">Use <pkg>net-libs/gnutls</pkg></flag>
+<flag name="mbedtls">Use <pkg>net-libs/mbedtls</pkg></flag>
+<flag name="ualpn">Enable tls-alpn-01 challenge support</flag>
+<flag name="docs">Generate HTML docs</flag>
+</use>
+</pkgmetadata>
