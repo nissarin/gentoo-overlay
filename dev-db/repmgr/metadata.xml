@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE pkgmetadata SYSTEM "http://www.gentoo.org/dtd/metadata.dtd">
+<pkgmetadata>
+<maintainer type="person">
+<name>Wojciech Pyczak</name>
+<email>nissarin@gmail.com</email>
+</maintainer>
+<longdescription>
+repmgr is an open-source tool suite for managing replication and failover
+in a cluster of PostgreSQL servers. It enhances PostgreSQL's built-in 
+hot-standby capabilities with tools to set up standby servers, 
+monitor replication, and perform administrative tasks 
+such as failover or manual switchover operations.
+</longdescription>
+</pkgmetadata>
