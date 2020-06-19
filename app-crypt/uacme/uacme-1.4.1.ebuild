@@ -10,7 +10,7 @@ SRC_URI="https://codeload.github.com/ndilieto/${PN}/tar.gz/v${PV} -> ${P}.tar.gz
 LICENSE="GPL-3"
 SLOT="0"
 KEYWORDS="~amd64 ~x86"
-IUSE="docs openssl gnutls mbedtls"
+IUSE="doc openssl gnutls mbedtls"
 REQUIRED_USE="
 	^^ ( openssl gnutls mbedtls )
 "
@@ -29,7 +29,7 @@ DEPEND="
 RDEPEND="${DEPEND}"
 BDEPEND="
 	virtual/pkgconfig
-	docs? ( app-text/asciidoc )
+	doc? ( app-text/asciidoc )
 "
 
 
@@ -40,10 +40,16 @@ src_configure() {
 		$(use_with gnutls)
 		$(use_with openssl)
 		$(use_with mbedtls)
-		$(use_enable docs)
+		$(use_enable doc docs)
 	)
 
 	econf "${myeconfargs[@]}" 
+}
+
+
+src_install() {
+	emake DESTDIR="${D}" install
+	use doc || doman uacme.1 ualpn.1
 }
 
 
