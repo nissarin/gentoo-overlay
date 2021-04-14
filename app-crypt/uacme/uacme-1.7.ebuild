@@ -1,11 +1,13 @@
-# Copyright 2020 Gentoo Authors
+# Copyright 2021 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
 EAPI=7
 
+MY_P="${PN}-upstream-${PV}"
+
 DESCRIPTION="Lightweight ACMEv2 client"
 HOMEPAGE="https://github.com/ndilieto/uacme"
-SRC_URI="https://codeload.github.com/ndilieto/${PN}/tar.gz/v${PV} -> ${P}.tar.gz"
+SRC_URI="https://github.com/ndilieto/${PN}/archive/refs/tags/upstream/${PV}.tar.gz"
 
 LICENSE="GPL-3"
 SLOT="0"
@@ -16,6 +18,7 @@ REQUIRED_USE="
 "
 
 DEPEND="
+	net-misc/curl[ssl]
 	gnutls? (
 		net-libs/gnutls:=
 	)
@@ -31,6 +34,8 @@ BDEPEND="
 	virtual/pkgconfig
 	doc? ( app-text/asciidoc )
 "
+
+S="${WORKDIR}/${MY_P}"
 
 
 src_configure() {
