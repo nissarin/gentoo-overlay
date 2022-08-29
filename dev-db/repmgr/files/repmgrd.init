@@ -1,0 +1,32 @@
+#!/sbin/openrc-run
+# Copyright 2022 Gentoo Authors
+# Distributed under the terms of the GNU General Public License v2
+
+description="PostgreSQL monitoring and failover management daemon"
+
+CONFIG_FILE=${REPMGRD_CONFIG_FILE:-/etc/repmgr.conf}
+
+piddir="/run/${RC_SVCNAME%%.*}"
+pidfile="${piddir}/${RC_SVCNAME}.pid"
+
+user=${REPMGRD_USER:-postgres}
+group=${REPMGRD_GROUP:-postgres}
+
+command_user="${user}:${group}"
+command=${REPMGRD_COMMAND:-/usr/bin/repmgrd}
+command_args="-p ${pidfile} -f \"${CONFIG_FILE}\" ${REPMGRD_ARGS}"
+
+
+depend() {
+    use net
+}
+
+
+start_pre() {
+    if [ ! -f "${CONFIG_FILE}" ] ; then
+        eerror "Please create a ${CONFIG_FILE} config file."
+        return 1
+    fi
+
+    checkpath -q -d ${piddir} -o "${user}:${group}"
+}
