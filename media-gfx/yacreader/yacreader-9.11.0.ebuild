@@ -22,7 +22,7 @@ SLOT="0"
 IUSE="qrencode"
 
 DEPEND="
-		>=app-arch/unarr-1.1.0_pre20200131[7z]
+		>=app-arch/unarr-1.1.0_beta1
 		app-text/poppler[qt5]
 		dev-qt/qtdeclarative:5
 		dev-qt/qtimageformats:5
