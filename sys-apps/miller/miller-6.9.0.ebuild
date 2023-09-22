@@ -7,7 +7,7 @@ inherit go-module
 
 DESCRIPTION="Miller is a command-line tool for querying, shaping, and reformatting data files in various formats."
 HOMEPAGE="https://miller.readthedocs.io"
-SRC_URI="https://github.com/johnkerl/miller/archive/refs/tags/v${PV}.tar.gz"
+SRC_URI="https://github.com/johnkerl/miller/archive/refs/tags/v${PV}.tar.gz -> ${P}.tar.gz"
 SRC_URI+=" https://download.nizgard.eu/gentoo/${P}-vendor.tar.xz"
 
 LICENSE="BSD-2"
@@ -32,5 +32,5 @@ src_compile() {
 
 src_install() {
 	dobin mlr
-	doman man/man1/*
+	doman man/mlr.1
 }
