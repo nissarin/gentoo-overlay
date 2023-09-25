@@ -21,7 +21,7 @@ RDEPEND="net-analyzer/netdata"
 BDEPEND=">=dev-lang/go-1.20"
 
 FILECAPS=(
-	'cap_net_admin+epi,cap_net_raw=eip' usr/libexec/netdata/plugins.d/go.d.plugin
+	'cap_net_admin,cap_net_raw+eip' usr/libexec/netdata/plugins.d/go.d.plugin
 )
 
 MY_PN=go.d.plugin
