@@ -7,7 +7,7 @@ inherit go-module
 
 DESCRIPTION="Command-line XML and HTML beautifier and content extractor"
 HOMEPAGE="https://github.com/sibprogrammer/xq"
-SRC_URI="https://github.com/sibprogrammer/xq/archive/refs/tags/v${PV}.tar.gz"
+SRC_URI="https://github.com/sibprogrammer/xq/archive/refs/tags/v${PV}.tar.gz -> ${P}.tar.gz"
 SRC_URI+=" https://download.nizgard.eu/gentoo/${P}-vendor.tar.xz"
 
 LICENSE="MIT"
