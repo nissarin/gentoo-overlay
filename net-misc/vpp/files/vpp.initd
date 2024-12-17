@@ -1,0 +1,59 @@
+#!/sbin/openrc-run
+# Copyright 2024 Gentoo Authors
+# Distributed under the terms of the GNU General Public License v2
+
+
+VPP_INSTANCE=${RC_SVCNAME#vpp}
+VPP_INSTANCE=${VPP_INSTANCE#[.-]}
+VPP_CONFIG=${VPP_CONFIG:-"/etc/vpp/${VPP_INSTANCE:-startup}.conf"}
+VPP_PREFIX=${VPP_PREFIX:-"${VPP_INSTANCE:-vpp}"}
+
+
+name="vpp"
+description="vector packet processing engine"
+command=/usr/bin/vpp
+command_background="true"
+command_args="${vpp_args} -c ${VPP_CONFIG}"
+start_stop_daemon_args="--wait 5000"
+required_files="${VPP_CONFIG}"
+pidfile="/var/run/vpp/${RC_SVCNAME}.pid"
+
+prefix=${VPP_PREFIX:+"${VPP_PREFIX}-"}    
+output_log="/var/log/vpp/${prefix}stdout.log"
+error_log="/var/log/vpp/${prefix}stderr.log"
+
+
+depend() {
+    need net
+}
+
+
+create_lcp_namespace() {
+    if [ -n "${VPP_LCP_NAMESPACE}" ]; then
+        if [ ! -e "/run/netns/${VPP_LCP_NAMESPACE}" ]; then
+            ip netns add "${VPP_LCP_NAMESPACE}"
+            ip netns exec "${VPP_LCP_NAMESPACE}" ip link set lo up
+	    ip netns exec "${VPP_LCP_NAMESPACE}" sysctl -w net.ipv6.conf.all.disable_ipv6=1
+        fi
+    fi
+}
+
+
+start_pre() {
+    checkpath -q -d -m 0755 -o vpp:vpp /var/run/vpp
+
+    modprobe -q uio_pci_generic || return 1
+    modprobe -q vfio-pci || return 1
+    modprobe -q ib_uverbs || return 1
+
+    create_lcp_namespace || return 1
+}
+
+
+stop_post() {
+    local prefix=${VPP_PREFIX:+"${VPP_PREFIX}-"}    
+
+    rm -f "/dev/shm/${prefix}db"
+    rm -f "/dev/shm/${prefix}global_vm"
+    rm -f "/dev/shm/${prefix}vpe-api"
+}
