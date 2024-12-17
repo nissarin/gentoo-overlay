@@ -81,7 +81,6 @@ src_install() {
 	doins "${FILESDIR}"/80-vpp.conf
 
 	newdoc "${ED}"/usr/etc/vpp/startup.conf startup.conf.dist
-	dodoc "${FILESDIR}"/README
 
 	dodir "/etc/vpp"
 	keepdir "/etc/vpp"
@@ -96,9 +95,4 @@ src_install() {
 
 	python_optimize
 	python_fix_shebang "${ED}"/usr/bin
-}
-
-
-pkg_postinst() {
-	elog "Please see ${EPREFIX}/usr/share/doc/${PF}/README for configuration information."
 }
