@@ -24,16 +24,16 @@ DEPEND="
 		dev-python/pyelftools[${PYTHON_USEDEP}]
 		dev-python/ply[${PYTHON_USEDEP}]
 	')
-	app-crypt/intel-ipsec-mb[static-libs]
+	>=app-crypt/intel-ipsec-mb-2.0[static-libs]
 	dev-lang/python
 	dev-libs/libbpf
 	dev-libs/libnl
-	dev-libs/openssl
+	>=dev-libs/openssl-3.4.0
 	net-libs/dpdk
 	net-libs/libpcap
 	net-libs/xdp-tools
 	sys-libs/libunwind
-	>=sys-cluster/rdma-core-52.0[static-libs]
+	>=sys-cluster/rdma-core-55.0[static-libs]
 "
 RDEPEND="
 	acct-user/vpp
@@ -52,6 +52,12 @@ CMAKE_BUILD_TYPE=release
 CMAKE_USE_DIR="${S}/src"
 
 src_prepare() {
+	PATCHES+=(
+		# current stable/2502 commits
+		"${FILESDIR}"/0001-vrrp-force-sleeps-between-timer-events.patch
+		"${FILESDIR}"/0002-acl-fix-an-off-by-one-error-in-fa_acl_match_ip6_addr.patch
+	)
+
 	# compilation fails with gcc
 	sed -e 's/-Werror//' -i src/CMakeLists.txt || die
 
@@ -73,9 +79,6 @@ src_configure(){
 
 src_install() {
 	cmake_src_install
-
-	# outdated
-	rm "${ED}"/usr/etc/sysctl.d/80-vpp.conf || die
 
 	insinto /etc/sysctl.d
 	doins "${FILESDIR}"/80-vpp.conf

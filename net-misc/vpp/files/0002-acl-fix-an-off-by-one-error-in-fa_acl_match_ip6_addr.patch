@@ -1,0 +1,35 @@
+From aa19c526a02889651c58b47422543477aef833e2 Mon Sep 17 00:00:00 2001
+From: Andrew Yourtchenko <ayourtch@gmail.com>
+Date: Wed, 26 Mar 2025 16:52:25 +0100
+Subject: [PATCH 2/2] acl: fix an off-by-one error in fa_acl_match_ip6_addr
+ which does masked IPv6 comparison
+
+The comparison code for the bit remainder (non-zero part of prefix length modulo 8)
+was incorrectly looking one byte further than it should.
+
+Type: fix
+Change-Id: Idd27d218e77eff5f368f2ba0a5cefb86ecf605f5
+Signed-off-by: Andrew Yourtchenko <ayourtch@gmail.com>
+(cherry picked from commit 7e295a42f0fd91a266a063b60935f7c8c3f9919e)
+---
+ src/plugins/acl/public_inlines.h | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/src/plugins/acl/public_inlines.h b/src/plugins/acl/public_inlines.h
+index eb9f0de92..80edfd674 100644
+--- a/src/plugins/acl/public_inlines.h
++++ b/src/plugins/acl/public_inlines.h
+@@ -268,8 +268,8 @@ fa_acl_match_ip6_addr (ip6_address_t * addr1, ip6_address_t * addr2,
+ 	}
+       if (prefixlen % 8)
+ 	{
+-	  u8 b1 = *((u8 *) addr1 + 1 + prefixlen / 8);
+-	  u8 b2 = *((u8 *) addr2 + 1 + prefixlen / 8);
++	  u8 b1 = *((u8 *) addr1 + prefixlen / 8);
++	  u8 b2 = *((u8 *) addr2 + prefixlen / 8);
+ 	  u8 mask0 = (0xff - ((1 << (8 - (prefixlen % 8))) - 1));
+ 	  return (b1 & mask0) == b2;
+ 	}
+-- 
+2.49.0
+
