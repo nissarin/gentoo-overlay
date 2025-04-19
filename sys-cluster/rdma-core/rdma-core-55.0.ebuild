@@ -77,6 +77,8 @@ src_prepare() {
 src_configure() {
 	perl_set_version
 
+	use static-libs && append-cflags -fPIC
+
 	local mycmakeargs=(
 		-DCMAKE_INSTALL_SYSCONFDIR="${EPREFIX}"/etc
 		-DCMAKE_INSTALL_RUNDIR=/run
