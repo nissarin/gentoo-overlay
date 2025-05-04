@@ -42,7 +42,6 @@ RDEPEND="
 "
 BDEPEND="
 	dev-lang/nasm
-	llvm-core/clang
 "
 
 PATCHES=(
