@@ -1,0 +1,23 @@
+# Address to listen on for web interface and telemetry
+# Default: :9167
+# WEB_LISTEN_ADDRESS=
+
+# Path under which to expose metrics
+# Default: /metrics
+# WEB_TELEMETRY_PATH=
+
+# Unix or TCP address of Unbound control socket
+# Default: tcp://localhost:8953
+# UNBOUND_HOST=
+
+# Unbound server certificate
+# Default: /etc/unbound/unbound_server.pem
+# UNBOUND_CA=
+
+# Unbound client certificate
+# Default: /etc/unbound/unbound_control.pem
+# UNBOUND_CERT=
+
+# Unbound client key
+# Default: /etc/unbound/unbound_control.key
+# UNBOUND_KEY=

@@ -1,0 +1,21 @@
+#!/sbin/openrc-run
+# Copyright 2025 Gentoo Authors
+# Distributed under the terms of the GNU General Public License v2
+
+name="unbound_exporter daemon"
+description="A Prometheus exporter for Unbound"
+command=/usr/bin/unbound_exporter
+command_args="${unbound_exporter_args}
+			  ${WEB_LISTEN_ADDRESS:+-web.listen-address "${WEB_LISTEN_ADDRESS}"}
+  			  ${WEB_TELEMETRY_PATH:+-web.telemetry-path "${WEB_TELEMETRY_PATH}"}
+  			  ${UNBOUND_HOST:+-unbound.host "${UNBOUND_HOST}"}
+  			  ${UNBOUND_CA:+-unbound.ca "${UNBOUND_CA}"}
+  			  ${UNBOUND_CERT:+-unbound.cert "${UNBOUND_CERT}"}
+  			  ${UNBOUND_KEY:+-unbound.key "${UNBOUND_KEY}"}
+"
+command_user="unbound-telemetry:unbound-telemetry"
+supervisor=supervise-daemon
+
+depend() {
+	use unbound
+}
