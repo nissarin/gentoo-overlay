@@ -1,0 +1,5 @@
+# Main configuration file, will be overwritten by making changes in UI/CLI
+# STALWART_CONFIG=/etc/stalwart/config.toml
+
+# This directory contains application state (local storage backends, logs, etc.)
+# STALWART_PATH=/var/lib/stalwart

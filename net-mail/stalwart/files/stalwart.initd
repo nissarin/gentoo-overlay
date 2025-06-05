@@ -1,0 +1,52 @@
+#!/sbin/openrc-run
+# Copyright 2007-2024 Gentoo Authors
+# Distributed under the terms of the GNU General Public License v2
+
+: ${STALWART_CONFIG:=/etc/stalwart/config.toml}
+: ${STALWART_PATH:=/var/lib/stalwart}
+
+required_files="${STALWART_CONFIG}"
+
+command=/usr/bin/stalwart
+command_args="--config ${STALWART_CONFIG}"
+command_user="stalwart-mail:stalwart-mail"
+command_background="yes"
+
+output_logger="logger -p daemon.info -t ${RC_SVCNAME} --"
+error_logger="logger -p daemon.err -t ${RC_SVCNAME} --"
+
+pidfile=/var/run/stalwart/pid
+capabilities="^cap_net_bind_service"
+
+name="Stalwart mail server"
+
+extra_commands="genpass"
+description_genpass="Generate password suitable for fallback/master user"
+
+genpass() {
+	local password=$(tr -dc 'A-Za-z0-9' </dev/urandom | head -c 16)
+	local hash=$(openssl passwd -6 "${password}")
+
+	einfo "Generated password: ${password}"
+	einfo "Hashed password: ${hash}"
+}
+
+start_pre() {
+	if [ ! -d "${STALWART_PATH}" ]; then
+		efrror "Directory ${STALWART_PATH} doesn't exists"
+		eerror "Ensure STALWART_PATH is correctly set and initialized by"
+		eerror "running 'emerge --config ${PN}' or 'stalwart --init'"
+		return 1
+	fi
+
+	checkpath -d -o stalwart-mail:stalwart-mail /var/run/stalwart
+
+	start_stop_daemon_args="${start_stop_daemon_args} --env STALWART_PATH='${STALWART_PATH}'"
+	supervise_daemon_args="${supervise_daemon_args} --env STALWART_PATH='${STALWART_PATH}'"
+}
+
+depend() {
+	need net
+	use postgresql mysql redis
+	before provide mta
+}
