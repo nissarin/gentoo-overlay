@@ -1,0 +1,42 @@
+#!/sbin/openrc-run
+# Copyright 2025 Gentoo Authors
+# Distributed under the terms of the GNU General Public License v2
+
+: ${DNS_COLLECTOR_CONFIG:=/etc/dnscollector.conf}
+
+required_files="${DNS_COLLECTOR_CONFIG}"
+
+name="DNS-collector"
+description="The missing piece between DNS servers and your data stack"
+command="/usr/bin/dnscollector"
+command_args="-config ${DNS_COLLECTOR_CONFIG}"
+command_background="yes"
+pidfile="/run/${RC_SVCNAME}.pid"
+
+extra_commands="checkconfig reload"
+
+checkconfig() {
+	local output=
+
+	output=$(${command} -config "${DNS_COLLECTOR_CONFIG}" -test-config)
+
+	if [ $? -ne 0 ]; then
+		echo "${output}"
+		return 1
+	fi
+}
+
+reload() {
+	checkconfig
+
+	start-stop-daemon --signal HUP --pidfile "${pidfile}"
+}
+
+depend() {
+	need net
+	before provide dns
+}
+
+start_pre() {
+	checkconfig
+}
