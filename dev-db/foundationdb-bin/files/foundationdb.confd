@@ -1,0 +1,8 @@
+# FoundationDB configuration file
+# FOUNDATIONDB_CONFIG_FILE=/etc/foundationdb/foundationdb.conf
+
+# FoundationDB cluster file
+# FOUNDATIONDB_CLUSTER_FILE=/etc/foundationdb/fdb.cluster
+
+# This is convenience variable used to ensure they exists and set correct permissions
+# FOUNDATIONDB_REMOTE_CLUSTERS=
