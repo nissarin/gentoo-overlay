@@ -1,0 +1,11 @@
+# Path to VPP socket
+# VPP_PROMETHEUS_EXPORT_SOCKET=/run/vpp/stats.sock
+
+# Listen port number
+# VPP_PROMETHEUS_EXPORT_PORT=9482
+
+# Metrics version (v1/v2)
+# VPP_PROMETHEUS_EXPORT_V2=yes
+
+# Patterns (things to export)
+# VPP_PROMETHEUS_EXPORT_PATTERNS="^/sys/ ^/mem/ ^/nodes/ ^/interfaces/ ^/buffer"

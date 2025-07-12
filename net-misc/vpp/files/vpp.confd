@@ -1,0 +1,10 @@
+# Main VPP config file
+# VPP_CONFIG="/etc/vpp/startup.conf"
+
+# Network namespace (used for linux-cp), must match config file
+# VPP_NETNS="vpp"
+# VPP_NETNS_NO_IPV6=yes
+
+# Shared memory segments prefix, must match config file
+# VPP_SHM_PREFIX="vpp-"
+

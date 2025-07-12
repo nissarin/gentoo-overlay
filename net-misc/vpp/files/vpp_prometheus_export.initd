@@ -1,0 +1,22 @@
+#!/sbin/openrc-run
+# Copyright 2025 Gentoo Authors
+# Distributed under the terms of the GNU General Public License v2
+
+
+
+name="vpp prometheus export daemon"
+description="VPP metrics exporter"
+command=/usr/bin/vpp_prometheus_export
+command_args="
+	${VPP_PROMETHEUS_EXPORT_SOCKET:+socket-name ${VPP_PROMETHEUS_EXPORT_SOCKET}}
+	${VPP_PROMETHEUS_EXPORT_PORT:+port ${VPP_PROMETHEUS_EXPORT_PORT}}
+	$(yesno ${VPP_PROMETHEUS_EXPORT_V2:-yes} && echo v2)
+	${VPP_PROMETHEUS_EXPORT_PATTERNS:-"^/sys/ ^/mem/ ^/nodes/ ^/interfaces/ ^/buffer"}
+"
+supervisor=supervise-daemon
+
+pidfile="/run/${RC_SVCNAME}.pid"
+
+depend() {
+    need vpp
+}

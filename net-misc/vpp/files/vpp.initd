@@ -2,58 +2,60 @@
 # Copyright 2024 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
-
-VPP_INSTANCE=${RC_SVCNAME#vpp}
-VPP_INSTANCE=${VPP_INSTANCE#[.-]}
-VPP_CONFIG=${VPP_CONFIG:-"/etc/vpp/${VPP_INSTANCE:-startup}.conf"}
-VPP_PREFIX=${VPP_PREFIX:-"${VPP_INSTANCE:-vpp}"}
-
+: ${VPP_CONFIG:=/etc/vpp/startup.conf}
+: ${VPP_NETNS:=vpp}
+: ${VPP_SHM_PREFIX:=vpp-}
+: ${VPP_NETNS_NO_IPV6:=yes}
 
 name="vpp"
-description="vector packet processing engine"
+description="Vector packet processing engine"
 command=/usr/bin/vpp
 command_background="true"
 command_args="${vpp_args} -c ${VPP_CONFIG}"
 start_stop_daemon_args="--wait 5000"
 required_files="${VPP_CONFIG}"
-pidfile="/var/run/vpp/${RC_SVCNAME}.pid"
+pidfile="/run/${RC_SVCNAME}.pid"
 
-prefix=${VPP_PREFIX:+"${VPP_PREFIX}-"}    
-output_log="/var/log/vpp/${prefix}stdout.log"
-error_log="/var/log/vpp/${prefix}stderr.log"
-
+output_log="/var/log/vpp/${RC_SVCNAME}-stdout.log"
+error_log="/var/log/vpp/${RC_SVCNAME}-stderr.log"
 
 depend() {
-    need net
+	need net
 }
-
-
-create_lcp_namespace() {
-    if [ -n "${VPP_LCP_NAMESPACE}" ]; then
-        if [ ! -e "/run/netns/${VPP_LCP_NAMESPACE}" ]; then
-            ip netns add "${VPP_LCP_NAMESPACE}"
-            ip netns exec "${VPP_LCP_NAMESPACE}" ip link set lo up
-	    ip netns exec "${VPP_LCP_NAMESPACE}" sysctl -w net.ipv6.conf.all.disable_ipv6=1
-        fi
-    fi
-}
-
 
 start_pre() {
-    checkpath -q -d -m 0755 -o vpp:vpp /var/run/vpp
+	checkpath -q -d -m 0755 -o vpp:vpp /var/run/vpp
 
-    modprobe -q uio_pci_generic || return 1
-    modprobe -q vfio-pci || return 1
-    modprobe -q ib_uverbs || return 1
+	ebegin "Trying to load uio_pci_generic kernel module"
+	modprobe -q uio_pci_generic
+	ewend $?
 
-    create_lcp_namespace || return 1
+	ebegin "Trying to load vfio-pci kernel module"
+	modprobe -q vfio-pci
+	ewend $?
+
+	ebegin "Trying to load ib_uverbs kernel module"
+	modprobe -q ib_uverbs
+	ewend $?
+
+	if [ -n "${VPP_NETNS}" ]; then
+		if [ ! -e "/run/netns/${VPP_NETNS}" ]; then
+			ebegin "Creating network namespace"
+
+			ip netns add "${VPP_NETNS}" || eend $? || return 1
+			ip netns exec "${VPP_NETNS}" ip link set lo up || eend $? || return 1
+
+			if yesno "${VPP_NETNS_NO_IPV6}"; then
+				ip netns exec "${VPP_NETNS}" sysctl -w net.ipv6.conf.all.disable_ipv6=1 || ewend $?
+			fi
+
+			eend $?
+		fi
+	fi
 }
 
-
 stop_post() {
-    local prefix=${VPP_PREFIX:+"${VPP_PREFIX}-"}    
-
-    rm -f "/dev/shm/${prefix}db"
-    rm -f "/dev/shm/${prefix}global_vm"
-    rm -f "/dev/shm/${prefix}vpe-api"
+	rm -f "/dev/shm/${VPP_SHM_PREFIX}db"
+	rm -f "/dev/shm/${VPP_SHM_PREFIX}global_vm"
+	rm -f "/dev/shm/${VPP_SHM_PREFIX}vpe-api"
 }
