@@ -1,5 +1,11 @@
-# Main configuration file, will be overwritten by making changes in UI/CLI
+# Main configuration file. It might be overwritten by making certain changes in UI/CLI.
+# For more information check https://stalw.art/docs/configuration/overview#local-and-database-settings
 # STALWART_CONFIG=/etc/stalwart/config.toml
 
-# This directory contains application state (local storage backends, logs, etc.)
+# This directory contains application state (configs, storage, logs, etc.)
 # STALWART_PATH=/var/lib/stalwart
+
+# On default configuration ADMIN_SECRET env variable is used to set fallback admin password (hash).
+# If you leave this variable unset the init script will generate random password whenever the service is (re)started.
+# In order to disable this feature set the variable to empty value.
+# STALWART_ADMIN_SECRET=

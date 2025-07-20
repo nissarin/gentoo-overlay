@@ -9,19 +9,17 @@ required_files="${STALWART_CONFIG}"
 
 name="Stalwart mail server"
 
-command=/usr/bin/stalwart
+command="/usr/bin/stalwart"
 command_args="--config ${STALWART_CONFIG}"
 command_user="stalwart-mail:stalwart-mail"
 command_background="yes"
+start_stop_daemon_args="--env STALWART_PATH='${STALWART_PATH}'"
 
 output_logger="logger -p daemon.info -t ${RC_SVCNAME} --"
 error_logger="logger -p daemon.err -t ${RC_SVCNAME} --"
 
 pidfile="/run/${RC_SVCNAME}.pid"
 capabilities="^cap_net_bind_service"
-
-extra_commands="genpass"
-description_genpass="Generate password suitable for fallback/master user"
 
 
 depend() {
@@ -32,16 +30,18 @@ depend() {
 
 
 start_pre() {
-	if [ ! -d "${STALWART_PATH}" ]; then
-		ewarn "Initialising ${STALWART_PATH}"
-		checkpath -d -m 750 -o "${command_user}" "${STALWART_PATH}"
+	checkpath -d -m 750 -o "${command_user}" "${STALWART_PATH}"
+	checkpath -d -m 755 -o "${command_user}" "/var/log/stalwart"
+
+	if [ -z "${STALWART_ADMIN_SECRET+set}" ]; then
+		local password=$(tr -dc 'A-Za-z0-9' </dev/urandom | head -c 16)
+		local encrypted=$(openssl passwd -6 "${password}")
+
+		einfo "ADMIN_SECRET is not set, generating random password: ${password}"
+		einfo "Password hash: ${encrypted}"
+
+		start_stop_daemon_args="${start_stop_daemon_args} --env ADMIN_SECRET='${encrypted}'"
+	elif [ -n "${STALWART_ADMIN_SECRET}" ]; then
+		start_stop_daemon_args="${start_stop_daemon_args} --env ADMIN_SECRET='${STALWART_ADMIN_SECRET}'"
 	fi
-}
-
-genpass() {
-	local password=$(tr -dc 'A-Za-z0-9' </dev/urandom | head -c 16)
-	local hash=$(openssl passwd -6 "${password}")
-
-	einfo "Generated password: ${password}"
-	einfo "Hashed password: ${hash}"
 }

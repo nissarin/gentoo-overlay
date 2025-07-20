@@ -50,8 +50,8 @@ RESTRICT="test"
 DOCS="README.md SECURITY.md UPGRADING.md CONTRIBUTING.md CHANGELOG.md"
 
 PATCHES=(
-	"${FILESDIR}/${P}-Fix-OSS-build-closes-1724.patch"
-	"${FILESDIR}/${P}-Always-returns-MULTISTATUS-on-WebDAV-REPORT-response.patch"
+	"${FILESDIR}/${P}-def-config.patch"
+	"${FILESDIR}/${P}-fixes.patch"
 )
 
 src_prepare() {
@@ -80,7 +80,7 @@ src_configure() {
 		$(usev foundationdb)
 	)
 
-	readonly SERVER_FEATURES=(--no-default-features ${server_features[@]/#/--features })
+	readonly SERVER_FEATURES=(--no-default-features --features="${server_features[*]}")
 
 	export ZSTD_SYS_USE_PKG_CONFIG=1
 	export LIBSQLITE3_SYS_USE_PKG_CONFIG=1
@@ -105,6 +105,7 @@ src_install() {
 	newconfd "${FILESDIR}"/stalwart.confd stalwart
 
 	keepdir /var/lib/stalwart
+	keepdir /var/log/stalwart
 
 	insinto /etc/stalwart
 	newins resources/config/config.toml config.toml.example

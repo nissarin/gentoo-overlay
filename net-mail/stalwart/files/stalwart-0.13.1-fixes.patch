@@ -1,0 +1,821 @@
+From 63202a5a39919f22eba211d286f2abc7929f7e17 Mon Sep 17 00:00:00 2001
+From: mdecimus <mauro@stalw.art>
+Date: Thu, 17 Jul 2025 08:19:28 +0200
+Subject: [PATCH 1/2] Update version number (closes #1844)
+
+---
+ CHANGELOG.md                        |  2 +-
+ Cargo.lock                          | 58 ++++++++++++++---------------
+ crates/cli/Cargo.toml               |  2 +-
+ crates/common/Cargo.toml            |  2 +-
+ crates/dav-proto/Cargo.toml         |  2 +-
+ crates/dav/Cargo.toml               |  2 +-
+ crates/directory/Cargo.toml         |  2 +-
+ crates/email/Cargo.toml             |  2 +-
+ crates/groupware/Cargo.toml         |  2 +-
+ crates/http-proto/Cargo.toml        |  2 +-
+ crates/http/Cargo.toml              |  2 +-
+ crates/imap-proto/Cargo.toml        |  2 +-
+ crates/imap/Cargo.toml              |  2 +-
+ crates/jmap-proto/Cargo.toml        |  2 +-
+ crates/jmap/Cargo.toml              |  2 +-
+ crates/main/Cargo.toml              |  2 +-
+ crates/managesieve/Cargo.toml       |  2 +-
+ crates/migration/Cargo.toml         |  2 +-
+ crates/nlp/Cargo.toml               |  2 +-
+ crates/pop3/Cargo.toml              |  2 +-
+ crates/services/Cargo.toml          |  2 +-
+ crates/smtp/Cargo.toml              |  2 +-
+ crates/spam-filter/Cargo.toml       |  2 +-
+ crates/store/Cargo.toml             |  2 +-
+ crates/trc/Cargo.toml               |  2 +-
+ crates/trc/event-macro/Cargo.toml   |  2 +-
+ crates/utils/Cargo.toml             |  2 +-
+ crates/utils/proc-macros/Cargo.toml |  2 +-
+ tests/Cargo.toml                    |  2 +-
+ 29 files changed, 57 insertions(+), 57 deletions(-)
+
+diff --git a/CHANGELOG.md b/CHANGELOG.md
+index 44ebb9c2..1908a3d1 100644
+--- a/CHANGELOG.md
++++ b/CHANGELOG.md
+@@ -7,7 +7,7 @@ All notable changes to this project will be documented in this file. This projec
+ If you are upgrading from v0.11.x or v0.12.x, this version includes **breaking changes** to the message queue and MTA configuration. Please read the [UPGRADING.md](https://github.com/stalwartlabs/stalwart/blob/main/UPGRADING.md) file for more information on how to upgrade from previous versions.
+ 
+ ## Added
+-- ACME: DigitalOcean cloud DNS provider support (closes #1667).
++- ACME: DigitalOcean cloud DNS provider support (#1667).
+ 
+ ## Changed
+ 
+diff --git a/Cargo.lock b/Cargo.lock
+index caef5e24..eb9439f4 100644
+--- a/Cargo.lock
++++ b/Cargo.lock
+@@ -1263,7 +1263,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "common"
+-version = "0.13.0"
++version = "0.13.1"
+ dependencies = [
+  "aes-gcm-siv",
+  "ahash",
+@@ -1733,7 +1733,7 @@ checksum = "2a2330da5de22e8a3cb63252ce2abb30116bf5265e89c0e01bc17015ce30a476"
+ 
+ [[package]]
+ name = "dav"
+-version = "0.13.0"
++version = "0.13.1"
+ dependencies = [
+  "calcard",
+  "chrono",
+@@ -1755,7 +1755,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "dav-proto"
+-version = "0.13.0"
++version = "0.13.1"
+ dependencies = [
+  "calcard",
+  "chrono",
+@@ -1948,7 +1948,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "directory"
+-version = "0.13.0"
++version = "0.13.1"
+ dependencies = [
+  "ahash",
+  "argon2",
+@@ -2226,7 +2226,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "email"
+-version = "0.13.0"
++version = "0.13.1"
+ dependencies = [
+  "aes",
+  "aes-gcm",
+@@ -2356,7 +2356,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "event_macro"
+-version = "0.13.0"
++version = "0.13.1"
+ dependencies = [
+  "proc-macro2",
+  "quote",
+@@ -2842,7 +2842,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "groupware"
+-version = "0.13.0"
++version = "0.13.1"
+ dependencies = [
+  "ahash",
+  "calcard",
+@@ -3142,7 +3142,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "http"
+-version = "0.13.0"
++version = "0.13.1"
+ dependencies = [
+  "async-stream",
+  "base64 0.22.1",
+@@ -3252,7 +3252,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "http_proto"
+-version = "0.13.0"
++version = "0.13.1"
+ dependencies = [
+  "common",
+  "compact_str",
+@@ -3554,7 +3554,7 @@ checksum = "09e54e57b4c48b40f7aec75635392b12b3421fa26fe8b4332e63138ed278459c"
+ 
+ [[package]]
+ name = "imap"
+-version = "0.13.0"
++version = "0.13.1"
+ dependencies = [
+  "ahash",
+  "common",
+@@ -3581,7 +3581,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "imap_proto"
+-version = "0.13.0"
++version = "0.13.1"
+ dependencies = [
+  "ahash",
+  "chrono",
+@@ -3827,7 +3827,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "jmap"
+-version = "0.13.0"
++version = "0.13.1"
+ dependencies = [
+  "aes-gcm",
+  "aes-gcm-siv",
+@@ -3898,7 +3898,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "jmap_proto"
+-version = "0.13.0"
++version = "0.13.1"
+ dependencies = [
+  "ahash",
+  "compact_str",
+@@ -4372,7 +4372,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "managesieve"
+-version = "0.13.0"
++version = "0.13.1"
+ dependencies = [
+  "ahash",
+  "common",
+@@ -4474,7 +4474,7 @@ checksum = "c797b9d6bb23aab2fc369c65f871be49214f5c759af65bde26ffaaa2b646b492"
+ 
+ [[package]]
+ name = "migration"
+-version = "0.13.0"
++version = "0.13.1"
+ dependencies = [
+  "base64 0.22.1",
+  "bincode 1.3.3",
+@@ -4712,7 +4712,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "nlp"
+-version = "0.13.0"
++version = "0.13.1"
+ dependencies = [
+  "ahash",
+  "bincode 1.3.3",
+@@ -5440,7 +5440,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "pop3"
+-version = "0.13.0"
++version = "0.13.1"
+ dependencies = [
+  "common",
+  "directory",
+@@ -5607,7 +5607,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "proc_macros"
+-version = "0.13.0"
++version = "0.13.1"
+ dependencies = [
+  "proc-macro2",
+  "quote",
+@@ -7271,7 +7271,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "services"
+-version = "0.13.0"
++version = "0.13.1"
+ dependencies = [
+  "aes-gcm",
+  "aes-gcm-siv",
+@@ -7483,7 +7483,7 @@ checksum = "8917285742e9f3e1683f0a9c4e6b57960b7314d0b08d30d1ecd426713ee2eee9"
+ 
+ [[package]]
+ name = "smtp"
+-version = "0.13.0"
++version = "0.13.1"
+ dependencies = [
+  "ahash",
+  "blake3",
+@@ -7574,7 +7574,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "spam-filter"
+-version = "0.13.0"
++version = "0.13.1"
+ dependencies = [
+  "common",
+  "compact_str",
+@@ -7638,14 +7638,14 @@ checksum = "a8f112729512f8e442d81f95a8a7ddf2b7c6b8a1a6f509a95864142b30cab2d3"
+ 
+ [[package]]
+ name = "stalwart"
+-version = "0.13.0"
++version = "0.13.1"
+ dependencies = [
+  "common",
+  "dav",
+  "directory",
+  "email",
+  "groupware",
+- "http 0.13.0",
++ "http 0.13.1",
+  "imap",
+  "jemallocator",
+  "jmap",
+@@ -7664,7 +7664,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "stalwart-cli"
+-version = "0.13.0"
++version = "0.13.1"
+ dependencies = [
+  "clap",
+  "console",
+@@ -7695,7 +7695,7 @@ checksum = "a2eb9349b6444b326872e140eb1cf5e7c522154d69e7a0ffb0fb81c06b37543f"
+ 
+ [[package]]
+ name = "store"
+-version = "0.13.0"
++version = "0.13.1"
+ dependencies = [
+  "ahash",
+  "arc-swap",
+@@ -7904,7 +7904,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "tests"
+-version = "0.13.0"
++version = "0.13.1"
+ dependencies = [
+  "ahash",
+  "async-trait",
+@@ -7925,7 +7925,7 @@ dependencies = [
+  "form_urlencoded",
+  "futures",
+  "groupware",
+- "http 0.13.0",
++ "http 0.13.1",
+  "http-body-util",
+  "http_proto",
+  "hyper 1.6.0",
+@@ -8451,7 +8451,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "trc"
+-version = "0.13.0"
++version = "0.13.1"
+ dependencies = [
+  "ahash",
+  "base64 0.22.1",
+@@ -8757,7 +8757,7 @@ checksum = "06abde3611657adf66d383f00b093d7faecc7fa57071cce2578660c9f1010821"
+ 
+ [[package]]
+ name = "utils"
+-version = "0.13.0"
++version = "0.13.1"
+ dependencies = [
+  "ahash",
+  "base64 0.22.1",
+diff --git a/crates/cli/Cargo.toml b/crates/cli/Cargo.toml
+index 5233f541..2de12084 100644
+--- a/crates/cli/Cargo.toml
++++ b/crates/cli/Cargo.toml
+@@ -5,7 +5,7 @@ authors = ["Stalwart Labs LLC <hello@stalw.art>"]
+ license = "AGPL-3.0-only OR LicenseRef-SEL"
+ repository = "https://github.com/stalwartlabs/cli"
+ homepage = "https://github.com/stalwartlabs/cli"
+-version = "0.13.0"
++version = "0.13.1"
+ edition = "2024"
+ readme = "README.md"
+ resolver = "2"
+diff --git a/crates/common/Cargo.toml b/crates/common/Cargo.toml
+index 8d65345d..47216838 100644
+--- a/crates/common/Cargo.toml
++++ b/crates/common/Cargo.toml
+@@ -1,6 +1,6 @@
+ [package]
+ name = "common"
+-version = "0.13.0"
++version = "0.13.1"
+ edition = "2024"
+ resolver = "2"
+ build = "build.rs"
+diff --git a/crates/dav-proto/Cargo.toml b/crates/dav-proto/Cargo.toml
+index ab901a60..353705d6 100644
+--- a/crates/dav-proto/Cargo.toml
++++ b/crates/dav-proto/Cargo.toml
+@@ -1,6 +1,6 @@
+ [package]
+ name = "dav-proto"
+-version = "0.13.0"
++version = "0.13.1"
+ edition = "2021"
+ 
+ [dependencies]
+diff --git a/crates/dav/Cargo.toml b/crates/dav/Cargo.toml
+index 6b74b7f8..b96a257b 100644
+--- a/crates/dav/Cargo.toml
++++ b/crates/dav/Cargo.toml
+@@ -1,6 +1,6 @@
+ [package]
+ name = "dav"
+-version = "0.13.0"
++version = "0.13.1"
+ edition = "2024"
+ resolver = "2"
+ 
+diff --git a/crates/directory/Cargo.toml b/crates/directory/Cargo.toml
+index 70400096..20fa50a8 100644
+--- a/crates/directory/Cargo.toml
++++ b/crates/directory/Cargo.toml
+@@ -1,6 +1,6 @@
+ [package]
+ name = "directory"
+-version = "0.13.0"
++version = "0.13.1"
+ edition = "2024"
+ resolver = "2"
+ 
+diff --git a/crates/email/Cargo.toml b/crates/email/Cargo.toml
+index 07582490..47a74705 100644
+--- a/crates/email/Cargo.toml
++++ b/crates/email/Cargo.toml
+@@ -1,6 +1,6 @@
+ [package]
+ name = "email"
+-version = "0.13.0"
++version = "0.13.1"
+ edition = "2024"
+ resolver = "2"
+ 
+diff --git a/crates/groupware/Cargo.toml b/crates/groupware/Cargo.toml
+index 5d3d2887..6731d0c9 100644
+--- a/crates/groupware/Cargo.toml
++++ b/crates/groupware/Cargo.toml
+@@ -1,6 +1,6 @@
+ [package]
+ name = "groupware"
+-version = "0.13.0"
++version = "0.13.1"
+ edition = "2024"
+ resolver = "2"
+ 
+diff --git a/crates/http-proto/Cargo.toml b/crates/http-proto/Cargo.toml
+index 76825549..8971e486 100644
+--- a/crates/http-proto/Cargo.toml
++++ b/crates/http-proto/Cargo.toml
+@@ -1,6 +1,6 @@
+ [package]
+ name = "http_proto"
+-version = "0.13.0"
++version = "0.13.1"
+ edition = "2024"
+ resolver = "2"
+ 
+diff --git a/crates/http/Cargo.toml b/crates/http/Cargo.toml
+index 293dbac4..cc5827e2 100644
+--- a/crates/http/Cargo.toml
++++ b/crates/http/Cargo.toml
+@@ -1,6 +1,6 @@
+ [package]
+ name = "http"
+-version = "0.13.0"
++version = "0.13.1"
+ edition = "2024"
+ resolver = "2"
+ 
+diff --git a/crates/imap-proto/Cargo.toml b/crates/imap-proto/Cargo.toml
+index 91aaf862..408e1809 100644
+--- a/crates/imap-proto/Cargo.toml
++++ b/crates/imap-proto/Cargo.toml
+@@ -1,6 +1,6 @@
+ [package]
+ name = "imap_proto"
+-version = "0.13.0"
++version = "0.13.1"
+ edition = "2024"
+ resolver = "2"
+ 
+diff --git a/crates/imap/Cargo.toml b/crates/imap/Cargo.toml
+index 8bba0b31..d5815092 100644
+--- a/crates/imap/Cargo.toml
++++ b/crates/imap/Cargo.toml
+@@ -1,6 +1,6 @@
+ [package]
+ name = "imap"
+-version = "0.13.0"
++version = "0.13.1"
+ edition = "2024"
+ resolver = "2"
+ 
+diff --git a/crates/jmap-proto/Cargo.toml b/crates/jmap-proto/Cargo.toml
+index 3738fd36..fd9cdde1 100644
+--- a/crates/jmap-proto/Cargo.toml
++++ b/crates/jmap-proto/Cargo.toml
+@@ -1,6 +1,6 @@
+ [package]
+ name = "jmap_proto"
+-version = "0.13.0"
++version = "0.13.1"
+ edition = "2024"
+ resolver = "2"
+ 
+diff --git a/crates/jmap/Cargo.toml b/crates/jmap/Cargo.toml
+index 4faaf47e..b04eb601 100644
+--- a/crates/jmap/Cargo.toml
++++ b/crates/jmap/Cargo.toml
+@@ -1,6 +1,6 @@
+ [package]
+ name = "jmap"
+-version = "0.13.0"
++version = "0.13.1"
+ edition = "2024"
+ resolver = "2"
+ 
+diff --git a/crates/main/Cargo.toml b/crates/main/Cargo.toml
+index 252e8236..a5ce675f 100644
+--- a/crates/main/Cargo.toml
++++ b/crates/main/Cargo.toml
+@@ -7,7 +7,7 @@ homepage = "https://stalw.art"
+ keywords = ["imap", "jmap", "smtp", "email", "mail", "webdav", "server"]
+ categories = ["email"]
+ license = "AGPL-3.0-only OR LicenseRef-SEL"
+-version = "0.13.0"
++version = "0.13.1"
+ edition = "2024"
+ resolver = "2"
+ 
+diff --git a/crates/managesieve/Cargo.toml b/crates/managesieve/Cargo.toml
+index 27f2b5a3..ba6c7853 100644
+--- a/crates/managesieve/Cargo.toml
++++ b/crates/managesieve/Cargo.toml
+@@ -1,6 +1,6 @@
+ [package]
+ name = "managesieve"
+-version = "0.13.0"
++version = "0.13.1"
+ edition = "2024"
+ resolver = "2"
+ 
+diff --git a/crates/migration/Cargo.toml b/crates/migration/Cargo.toml
+index a1ab2bbc..799fd39c 100644
+--- a/crates/migration/Cargo.toml
++++ b/crates/migration/Cargo.toml
+@@ -1,6 +1,6 @@
+ [package]
+ name = "migration"
+-version = "0.13.0"
++version = "0.13.1"
+ edition = "2024"
+ resolver = "2"
+ 
+diff --git a/crates/nlp/Cargo.toml b/crates/nlp/Cargo.toml
+index e92da936..42c7623a 100644
+--- a/crates/nlp/Cargo.toml
++++ b/crates/nlp/Cargo.toml
+@@ -1,6 +1,6 @@
+ [package]
+ name = "nlp"
+-version = "0.13.0"
++version = "0.13.1"
+ edition = "2024"
+ resolver = "2"
+ 
+diff --git a/crates/pop3/Cargo.toml b/crates/pop3/Cargo.toml
+index 8cf26fee..6b610f12 100644
+--- a/crates/pop3/Cargo.toml
++++ b/crates/pop3/Cargo.toml
+@@ -1,6 +1,6 @@
+ [package]
+ name = "pop3"
+-version = "0.13.0"
++version = "0.13.1"
+ edition = "2024"
+ resolver = "2"
+ 
+diff --git a/crates/services/Cargo.toml b/crates/services/Cargo.toml
+index b5f71c0a..c33dc7cd 100644
+--- a/crates/services/Cargo.toml
++++ b/crates/services/Cargo.toml
+@@ -1,6 +1,6 @@
+ [package]
+ name = "services"
+-version = "0.13.0"
++version = "0.13.1"
+ edition = "2024"
+ resolver = "2"
+ 
+diff --git a/crates/smtp/Cargo.toml b/crates/smtp/Cargo.toml
+index ecc1c3b7..1ff1b03b 100644
+--- a/crates/smtp/Cargo.toml
++++ b/crates/smtp/Cargo.toml
+@@ -7,7 +7,7 @@ homepage = "https://stalw.art/smtp"
+ keywords = ["smtp", "email", "mail", "server"]
+ categories = ["email"]
+ license = "AGPL-3.0-only OR LicenseRef-SEL"
+-version = "0.13.0"
++version = "0.13.1"
+ edition = "2024"
+ resolver = "2"
+ 
+diff --git a/crates/spam-filter/Cargo.toml b/crates/spam-filter/Cargo.toml
+index ef28146f..320f5826 100644
+--- a/crates/spam-filter/Cargo.toml
++++ b/crates/spam-filter/Cargo.toml
+@@ -1,6 +1,6 @@
+ [package]
+ name = "spam-filter"
+-version = "0.13.0"
++version = "0.13.1"
+ edition = "2024"
+ resolver = "2"
+ 
+diff --git a/crates/store/Cargo.toml b/crates/store/Cargo.toml
+index 5ec0e672..156d2f8b 100644
+--- a/crates/store/Cargo.toml
++++ b/crates/store/Cargo.toml
+@@ -1,6 +1,6 @@
+ [package]
+ name = "store"
+-version = "0.13.0"
++version = "0.13.1"
+ edition = "2024"
+ resolver = "2"
+ 
+diff --git a/crates/trc/Cargo.toml b/crates/trc/Cargo.toml
+index 44e58647..14386ef4 100644
+--- a/crates/trc/Cargo.toml
++++ b/crates/trc/Cargo.toml
+@@ -1,6 +1,6 @@
+ [package]
+ name = "trc"
+-version = "0.13.0"
++version = "0.13.1"
+ edition = "2024"
+ resolver = "2"
+ 
+diff --git a/crates/trc/event-macro/Cargo.toml b/crates/trc/event-macro/Cargo.toml
+index f8ee8fcb..c2212a45 100644
+--- a/crates/trc/event-macro/Cargo.toml
++++ b/crates/trc/event-macro/Cargo.toml
+@@ -1,6 +1,6 @@
+ [package]
+ name = "event_macro"
+-version = "0.13.0"
++version = "0.13.1"
+ edition = "2024"
+ 
+ [lib]
+diff --git a/crates/utils/Cargo.toml b/crates/utils/Cargo.toml
+index c9b204d7..b99c535e 100644
+--- a/crates/utils/Cargo.toml
++++ b/crates/utils/Cargo.toml
+@@ -1,6 +1,6 @@
+ [package]
+ name = "utils"
+-version = "0.13.0"
++version = "0.13.1"
+ edition = "2024"
+ resolver = "2"
+ 
+diff --git a/crates/utils/proc-macros/Cargo.toml b/crates/utils/proc-macros/Cargo.toml
+index 2548ff5f..feb1842a 100644
+--- a/crates/utils/proc-macros/Cargo.toml
++++ b/crates/utils/proc-macros/Cargo.toml
+@@ -1,6 +1,6 @@
+ [package]
+ name = "proc_macros"
+-version = "0.13.0"
++version = "0.13.1"
+ edition = "2024"
+ 
+ [lib]
+diff --git a/tests/Cargo.toml b/tests/Cargo.toml
+index 81316422..c754c33b 100644
+--- a/tests/Cargo.toml
++++ b/tests/Cargo.toml
+@@ -1,6 +1,6 @@
+ [package]
+ name = "tests"
+-version = "0.13.0"
++version = "0.13.1"
+ edition = "2024"
+ resolver = "2"
+ 
+-- 
+2.49.1
+
+
+From 62449ae57dbcd7f35def7654c4004c42c762c390 Mon Sep 17 00:00:00 2001
+From: mdecimus <mauro@stalw.art>
+Date: Thu, 17 Jul 2025 08:30:01 +0200
+Subject: [PATCH 2/2] Update CLI queue API struct
+
+---
+ crates/cli/src/modules/queue.rs | 86 +++++++++++++--------------------
+ 1 file changed, 34 insertions(+), 52 deletions(-)
+
+diff --git a/crates/cli/src/modules/queue.rs b/crates/cli/src/modules/queue.rs
+index a3af2a51..1794ebc9 100644
+--- a/crates/cli/src/modules/queue.rs
++++ b/crates/cli/src/modules/queue.rs
+@@ -17,35 +17,32 @@ use serde::{Deserialize, Deserializer};
+ 
+ #[derive(Debug, Deserialize, PartialEq, Eq)]
+ pub struct Message {
++    pub id: u64,
+     pub return_path: String,
+-    pub domains: Vec<Domain>,
++    pub recipients: Vec<Recipient>,
+     #[serde(deserialize_with = "deserialize_datetime")]
+     pub created: DateTime,
+     pub size: usize,
+     #[serde(default)]
+     pub priority: i16,
++    #[serde(default)]
+     pub env_id: Option<String>,
++    pub blob_hash: String,
+ }
+ 
+ #[derive(Debug, Deserialize, PartialEq, Eq)]
+-pub struct Domain {
+-    pub name: String,
++pub struct Recipient {
++    pub address: String,
+     pub status: Status,
+-    pub recipients: Vec<Recipient>,
+-
++    pub queue: String,
+     pub retry_num: u32,
+-    #[serde(deserialize_with = "deserialize_maybe_datetime")]
++    #[serde(deserialize_with = "deserialize_maybe_datetime", default)]
+     pub next_retry: Option<DateTime>,
+-    #[serde(deserialize_with = "deserialize_maybe_datetime")]
++    #[serde(deserialize_with = "deserialize_maybe_datetime", default)]
+     pub next_notify: Option<DateTime>,
+-    #[serde(deserialize_with = "deserialize_datetime")]
+-    pub expires: DateTime,
+-}
+-
+-#[derive(Debug, Deserialize, PartialEq, Eq)]
+-pub struct Recipient {
+-    pub address: String,
+-    pub status: Status,
++    #[serde(deserialize_with = "deserialize_maybe_datetime", default)]
++    pub expires: Option<DateTime>,
++    #[serde(default)]
+     pub orcpt: Option<String>,
+ }
+ 
+@@ -97,30 +94,29 @@ impl QueueCommands {
+                         let mut rcpts = String::new();
+                         let mut deliver_at = i64::MAX;
+                         let mut deliver_pos = 0;
+-                        for (pos, domain) in message.domains.iter().enumerate() {
+-                            if let Some(next_retry) = &domain.next_retry {
++
++                        for (pos, rcpt) in message.recipients.iter().enumerate() {
++                            if let Some(next_retry) = &rcpt.next_retry {
+                                 let ts = next_retry.to_timestamp();
+                                 if ts < deliver_at {
+                                     deliver_at = ts;
+                                     deliver_pos = pos;
+                                 }
+                             }
+-                            for rcpt in &domain.recipients {
+-                                if !rcpts.is_empty() {
+-                                    rcpts.push('\n');
+-                                }
+-                                rcpts.push_str(&rcpt.address);
+-                                rcpts.push_str(" (");
+-                                rcpts.push_str(rcpt.status.status_short());
+-                                rcpts.push(')');
++                            if !rcpts.is_empty() {
++                                rcpts.push('\n');
+                             }
++                            rcpts.push_str(&rcpt.address);
++                            rcpts.push_str(" (");
++                            rcpts.push_str(rcpt.status.status_short());
++                            rcpts.push(')');
+                         }
+ 
+                         let mut cells = Vec::new();
+                         cells.push(Cell::new(&format!("{id:X}")));
+                         cells.push(if deliver_at != i64::MAX {
+                             Cell::new(
+-                                &message.domains[deliver_pos]
++                                &message.recipients[deliver_pos]
+                                     .next_retry
+                                     .as_ref()
+                                     .unwrap()
+@@ -203,32 +199,32 @@ impl QueueCommands {
+                                 Cell::new(&message.priority.to_string()),
+                             ]));
+                         }
+-                        for domain in &message.domains {
++                        for rcpt in &message.recipients {
+                             table.add_row(Row::new(vec![
+-                                Cell::new_align(&domain.name, Alignment::RIGHT)
++                                Cell::new_align(&rcpt.address, Alignment::RIGHT)
+                                     .with_style(Attr::Bold)
+                                     .with_style(Attr::Italic(true))
+                                     .with_hspan(2),
+                             ]));
+                             table.add_row(Row::new(vec![
+                                 Cell::new("Status").with_style(Attr::Bold),
+-                                Cell::new(domain.status.status()),
++                                Cell::new(rcpt.status.status()),
+                             ]));
+                             table.add_row(Row::new(vec![
+                                 Cell::new("Details").with_style(Attr::Bold),
+-                                Cell::new(domain.status.details()),
++                                Cell::new(rcpt.status.details()),
+                             ]));
+                             table.add_row(Row::new(vec![
+                                 Cell::new("Retry #").with_style(Attr::Bold),
+-                                Cell::new(&domain.retry_num.to_string()),
++                                Cell::new(&rcpt.retry_num.to_string()),
+                             ]));
+-                            if let Some(dt) = &domain.next_retry {
++                            if let Some(dt) = &rcpt.next_retry {
+                                 table.add_row(Row::new(vec![
+                                     Cell::new("Delivery Due").with_style(Attr::Bold),
+                                     Cell::new(&dt.to_rfc822()),
+                                 ]));
+                             }
+-                            if let Some(dt) = &domain.next_notify {
++                            if let Some(dt) = &rcpt.next_notify {
+                                 table.add_row(Row::new(vec![
+                                     Cell::new("Notify at").with_style(Attr::Bold),
+                                     Cell::new(&dt.to_rfc822()),
+@@ -236,25 +232,11 @@ impl QueueCommands {
+                             }
+                             table.add_row(Row::new(vec![
+                                 Cell::new("Expires").with_style(Attr::Bold),
+-                                Cell::new(&domain.expires.to_rfc822()),
+-                            ]));
+-
+-                            let mut rcpts = Table::new();
+-                            rcpts.add_row(Row::new(vec![
+-                                Cell::new("Address").with_style(Attr::Bold),
+-                                Cell::new("Status").with_style(Attr::Bold),
+-                                Cell::new("Details").with_style(Attr::Bold),
+-                            ]));
+-                            for rcpt in &domain.recipients {
+-                                rcpts.add_row(Row::new(vec![
+-                                    Cell::new(&rcpt.address),
+-                                    Cell::new(rcpt.status.status()),
+-                                    Cell::new(rcpt.status.details()),
+-                                ]));
+-                            }
+-                            table.add_row(Row::new(vec![
+-                                Cell::new("Recipients").with_style(Attr::Bold),
+-                                Cell::from(&rcpts),
++                                if let Some(dt) = &rcpt.expires {
++                                    Cell::new(&dt.to_rfc822())
++                                } else {
++                                    Cell::new("N/A")
++                                },
+                             ]));
+                         }
+                     } else {
+-- 
+2.49.1
+

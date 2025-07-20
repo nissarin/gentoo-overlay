@@ -1,0 +1,34 @@
+diff --git a/resources/config/config.toml b/resources/config/config.toml
+index b62ed9fb..68d24af4 100644
+--- a/resources/config/config.toml
++++ b/resources/config/config.toml
+@@ -1,5 +1,5 @@
+ #############################################
+-# Stalwart Configuration File   
++# Stalwart Configuration File
+ #############################################
+ 
+ [server.listener."smtp"]
+@@ -58,15 +58,18 @@ compression = "lz4"
+ type = "internal"
+ store = "rocksdb"
+ 
+-[tracer."stdout"]
+-type = "stdout"
++[tracer.log]
++type = "log"
+ level = "info"
++path = "/var/log/stalwart"
++prefix = "stalwart.log"
++rotate = "daily"
+ ansi = false
+ enable = true
+ 
+ #[server.run-as]
+-#user = "stalwart"
+-#group = "stalwart"
++#user = "stalwart-mail"
++#group = "stalwart-mail"
+ 
+ [authentication.fallback-admin]
+ user = "admin"
