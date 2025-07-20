@@ -50,6 +50,10 @@ BDEPEND="
 CMAKE_BUILD_TYPE=release
 CMAKE_USE_DIR="${S}/src"
 
+PATCHES=(
+	"${FILESDIR}/${P}-fixes.patch"
+)
+
 src_configure(){
 	if ! tc-is-clang; then
 		local -x CC=${CHOST}-clang
