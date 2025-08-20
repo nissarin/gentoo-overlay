@@ -80,6 +80,7 @@ src_configure() {
 		rocks
 		s3
 		sqlite
+		zenoh
 	)
 
 	readonly SERVER_FEATURES=(--no-default-features --features="${server_features[*]}")
