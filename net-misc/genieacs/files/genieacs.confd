@@ -1,0 +1,116 @@
+# MongoDB connection string.
+# MONGODB_CONNECTION_URL="mongodb://127.0.0.1/genieacs"
+
+# The format used for the log entries, possible values are simple and json.
+# LOG_FORMAT=simple
+
+# The format used for the log entries, possible values are simple and json.
+# ACCESS_LOG_FORMAT=simple
+
+# File to dump CPE debug log.
+# DEBUG_FILE=
+
+# Debug log format. Valid values are ‘yaml’ and ‘json’.
+# DEBUG_FORMAT=yaml
+
+# The number of worker processes to spawn for genieacs-cwmp. 
+# A value of 0 means as many as there are CPU cores available.
+# CWMP_WORKER_PROCESSES=0
+
+# The TCP port that genieacs-cwmp listens on.
+# CWMP_PORT=7547
+
+# The network interface that genieacs-cwmp binds to.
+# CWMP_INTERFACE="::"
+
+# Path to certificate file. If omitted, non-secure HTTP will be used.
+# CWMP_SSL_CERT=
+
+# Path to certificate key file. If omitted, non-secure HTTP will be used.
+# CWMP_SSL_KEY=
+
+# File to log process related events for genieacs.* service. If omitted, logs will go to stderr.
+# CWMP_LOG_FILE=/var/log/genieacs/cwmp.log
+
+# File to log incoming requests for genieacs.* service. If omitted, logs will go to stdout.
+# CWMP_ACCESS_LOG_FILE=/var/log/genieacs/cwmp-access.log
+#
+# The directory from which to look up extension scripts.
+# EXT_DIR=/usr/%LIBDIR%/node_modules/genieacs/config/ext
+
+# Timeout (in milliseconds) to allow for calls to extensions to return a response.
+# EXT_TIMEOUT=3000
+#
+# The number of worker processes to spawn for genieacs-fs. A value of 0 means as many as there are CPU cores available.
+# FS_WORKER_PROCESSES=0
+
+# The TCP port that genieacs-fs listens on.
+# FS_PORT=7567
+
+# The network interface that genieacs-fs binds to.
+# FS_INTERFACE="::""
+
+# Path to certificate file. If omitted, non-secure HTTP will be used.
+# FS_SSL_CERT=
+
+# Path to certificate key file. If omitted, non-secure HTTP will be used.
+# FS_SSL_KEY=
+
+# File to log process related events for genieacs-fs. If omitted, logs will go to stderr.
+# FS_LOG_FILE=/var/log/genieacs/fs.log
+
+# File to log incoming requests for genieacs-fs. If omitted, logs will go to stdout.
+# FS_ACCESS_LOG_FILE=/var/log/genieacs/fs-access.log
+
+# The URL prefix (e.g. ‘https://example.com:7567/’) to use when generating the file URL for TR-069 Download requests. 
+# Set this if genieacs-fs and genieacs-cwmp are behind a proxy or running on different servers.
+# Default: auto generated based on the hostname from the ACS URL, FS_PORT config, and whether or not SSL is enabled for genieacs-fs.
+# FS_URL_PREFIX=
+
+# The number of worker processes to spawn for genieacs-nbi. 
+# A value of 0 means as many as there are CPU cores available.
+# NBI_WORKER_PROCESSES=0
+
+# The TCP port that genieacs-nbi listens on.
+# NBI_PORT=7557
+
+# The network interface that genieacs-nbi binds to.
+# NBI_INTERFACE="::"
+
+# Path to certificate file. If omitted, non-secure HTTP will be used.
+# NBI_SSL_CERT=
+
+# Path to certificate key file. If omitted, non-secure HTTP will be used.
+# NBI_SSL_KEY=
+
+# File to log process related events for genieacs-nbi. If omitted, logs will go to stderr.
+# NBI_LOG_FILE=/var/log/genieacs/nbi.log
+
+# File to log incoming requests for genieacs-nbi. If omitted, logs will go to stdout.
+# NBI_ACCESS_LOG_FILE=/var/log/genieacs/nbi-access.log
+
+# The number of worker processes to spawn for genieacs-ui.
+# A value of 0 means as many as there are CPU cores available.
+# UI_WORKER_PROCESSES=0
+
+# The TCP port that genieacs-ui listens on.
+# UI_PORT=3000
+
+# The network interface that genieacs-ui binds to.
+# UI_INTERFACE="::"
+
+# Path to certificate file. If omitted, non-secure HTTP will be used.
+# UI_SSL_CERT=
+
+# Path to certificate key file. If omitted, non-secure HTTP will be used.
+# UI_SSL_KEY=
+
+# File to log process related events for genieacs-ui. If omitted, logs will go to stderr.
+# UI_LOG_FILE=/var/log/genieacs/ui.log
+
+# File to log incoming requests for genieacs-ui. If omitted, logs will go to stdout.
+# UI_ACCESS_LOG_FILE=/var/log/genieacs/ui-access.log
+
+# The key used for signing JWT tokens that are stored in browser cookies.
+# The string can be up to 64 characters in length.
+# UI_JWT_SECRET=

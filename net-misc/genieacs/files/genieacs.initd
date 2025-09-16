@@ -1,0 +1,76 @@
+#!/sbin/openrc-run
+# Copyright 2025 Gentoo Authors
+# Distributed under the terms of the GNU General Public License v2
+
+name="${RC_SVCNAME} daemon"
+description="GenieACS service daemon"
+command="/usr/bin/${RC_SVCNAME}"
+command_args="${genieacs_args}"
+command_background="true"
+command_user="genieacs:genieacs"
+pidfile="/run/${RC_SVCNAME}.pid"
+
+: ${CWMP_LOG_FILE:=/var/log/genieacs/cwmp.log}
+: ${CWMP_ACCESS_LOG_FILE:=/var/log/genieacs/cwmp-access.log}
+: ${FS_LOG_FILE:=/var/log/genieacs/fs.log}
+: ${FS_ACCESS_LOG_FILE:=/var/log/genieacs/fs-access.log}
+: ${NBI_LOG_FILE:=/var/log/genieacs/nbi.log}
+: ${NBI_ACCESS_LOG_FILE:=/var/log/genieacs/nbi-access.log}
+: ${UI_LOG_FILE:=/var/log/genieacs/ui.log}
+: ${UI_ACCESS_LOG_FILE:=/var/log/genieacs/ui-access.log}
+
+depend() {
+	need net
+	after mongodb
+}
+
+start_pre() {
+	checkpath -q -d -m 0755 -o genieacs:genieacs /var/log/genieacs
+
+	local env_args=
+
+	if [ "${RC_SVCNAME#genieacs.}" = "ui" ] && [ -z "${UI_JWT_SECRET}" ]; then
+		eerror "UI_JWT_SECRET is not set"
+		return 1
+	fi
+
+	env_args="${env_args}${MONGODB_CONNECTION_URL:+ --env GENIEACS_MONGODB_CONNECTION_URL=}${MONGODB_CONNECTION_URL}"
+	env_args="${env_args}${LOG_FORMAT:+ --env GENIEACS_LOG_FORMAT=}${LOG_FORMAT}"
+	env_args="${env_args}${ACCESS_LOG_FORMAT:+ --env GENIEACS_ACCESS_LOG_FORMAT=}${ACCESS_LOG_FORMAT}"
+	env_args="${env_args}${DEBUG_FILE:+ --env GENIEACS_DEBUG_FILE=}${DEBUG_FILE}"
+	env_args="${env_args}${DEBUG_FORMAT:+ --env GENIEACS_DEBUG_FORMAT=}${DEBUG_FORMAT}"
+	env_args="${env_args}${CWMP_WORKER_PROCESSES:+ --env GENIEACS_CWMP_WORKER_PROCESSES=}${CWMP_WORKER_PROCESSES}"
+	env_args="${env_args}${CWMP_PORT:+ --env GENIEACS_CWMP_PORT=}${CWMP_PORT}"
+	env_args="${env_args}${CWMP_INTERFACE:+ --env GENIEACS_CWMP_INTERFACE=}${CWMP_INTERFACE}"
+	env_args="${env_args}${CWMP_SSL_CERT:+ --env GENIEACS_CWMP_SSL_CERT=}${CWMP_SSL_CERT}"
+	env_args="${env_args}${CWMP_SSL_KEY:+ --env GENIEACS_CWMP_SSL_KEY=}${CWMP_SSL_KEY}"
+	env_args="${env_args}${CWMP_LOG_FILE:+ --env GENIEACS_CWMP_LOG_FILE=}${CWMP_LOG_FILE}"
+	env_args="${env_args}${CWMP_ACCESS_LOG_FILE:+ --env GENIEACS_CWMP_ACCESS_LOG_FILE=}${CWMP_ACCESS_LOG_FILE}"
+	env_args="${env_args}${EXT_DIR:+ --env GENIEACS_EXT_DIR=}${EXT_DIR}"
+	env_args="${env_args}${EXT_TIMEOUT:+ --env GENIEACS_EXT_TIMEOUT=}${EXT_TIMEOUT}"
+	env_args="${env_args}${FS_WORKER_PROCESSES:+ --env GENIEACS_FS_WORKER_PROCESSES=}${FS_WORKER_PROCESSES}"
+	env_args="${env_args}${FS_PORT:+ --env GENIEACS_FS_PORT=}${FS_PORT}"
+	env_args="${env_args}${FS_INTERFACE:+ --env GENIEACS_FS_INTERFACE=}${FS_INTERFACE}"
+	env_args="${env_args}${FS_SSL_CERT:+ --env GENIEACS_FS_SSL_CERT=}${FS_SSL_CERT}"
+	env_args="${env_args}${FS_SSL_KEY:+ --env GENIEACS_FS_SSL_KEY=}${FS_SSL_KEY}"
+	env_args="${env_args}${FS_LOG_FILE:+ --env GENIEACS_FS_LOG_FILE=}${FS_LOG_FILE}"
+	env_args="${env_args}${FS_ACCESS_LOG_FILE:+ --env GENIEACS_FS_ACCESS_LOG_FILE=}${FS_ACCESS_LOG_FILE}"
+	env_args="${env_args}${FS_URL_PREFIX:+ --env GENIEACS_FS_URL_PREFIX=}${FS_URL_PREFIX}"
+	env_args="${env_args}${NBI_WORKER_PROCESSES:+ --env GENIEACS_NBI_WORKER_PROCESSES=}${NBI_WORKER_PROCESSES}"
+	env_args="${env_args}${NBI_PORT:+ --env GENIEACS_NBI_PORT=}${NBI_PORT}"
+	env_args="${env_args}${NBI_INTERFACE:+ --env GENIEACS_NBI_INTERFACE=}${NBI_INTERFACE}"
+	env_args="${env_args}${NBI_SSL_CERT:+ --env GENIEACS_NBI_SSL_CERT=}${NBI_SSL_CERT}"
+	env_args="${env_args}${NBI_SSL_KEY:+ --env GENIEACS_NBI_SSL_KEY=}${NBI_SSL_KEY}"
+	env_args="${env_args}${NBI_LOG_FILE:+ --env GENIEACS_NBI_LOG_FILE=}${NBI_LOG_FILE}"
+	env_args="${env_args}${NBI_ACCESS_LOG_FILE:+ --env GENIEACS_NBI_ACCESS_LOG_FILE=}${NBI_ACCESS_LOG_FILE}"
+	env_args="${env_args}${UI_WORKER_PROCESSES:+ --env GENIEACS_UI_WORKER_PROCESSES=}${UI_WORKER_PROCESSES}"
+	env_args="${env_args}${UI_PORT:+ --env GENIEACS_UI_PORT=}${UI_PORT}"
+	env_args="${env_args}${UI_INTERFACE:+ --env GENIEACS_UI_INTERFACE=}${UI_INTERFACE}"
+	env_args="${env_args}${UI_SSL_CERT:+ --env GENIEACS_UI_SSL_CERT=}${UI_SSL_CERT}"
+	env_args="${env_args}${UI_SSL_KEY:+ --env GENIEACS_UI_SSL_KEY=}${UI_SSL_KEY}"
+	env_args="${env_args}${UI_LOG_FILE:+ --env GENIEACS_UI_LOG_FILE=}${UI_LOG_FILE}"
+	env_args="${env_args}${UI_ACCESS_LOG_FILE:+ --env GENIEACS_UI_ACCESS_LOG_FILE=}${UI_ACCESS_LOG_FILE}"
+	env_args="${env_args}${UI_JWT_SECRET:+ --env GENIEACS_UI_JWT_SECRET=}${UI_JWT_SECRET}"
+
+	start_stop_daemon_args="${start_stop_deamon_args} ${env_args}"
+}
