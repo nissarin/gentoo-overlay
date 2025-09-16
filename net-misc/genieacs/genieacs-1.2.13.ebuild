@@ -10,7 +10,7 @@ HOMEPAGE="https://genieacs.com/"
 SRC_URI="https://github.com/genieacs/genieacs/releases/download/v${PV}/genieacs-${MY_PV}.tgz -> ${P}.tgz"
 SRC_URI+=" https://download.nizgard.eu/gentoo/${P}-node_modules.tar.xz"
 
-LICENSE="AGPL-3.0"
+LICENSE="AGPL-3"
 SLOT="0"
 KEYWORDS="~amd64"
 
