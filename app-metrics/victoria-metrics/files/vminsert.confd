@@ -1,0 +1,8 @@
+# Comma-separated addresses of vmstorage nodes
+# VM_STORAGE_NODE=localhost
+
+# Monitoring endpoint
+# VM_HTTP_LISTEN_ADDR=":8480"
+
+# Additional arguments
+VM_ARGS=

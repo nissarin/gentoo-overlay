@@ -1,0 +1,18 @@
+# Data retention period in months, minimum 24 hours.
+# The following units are supported: s (second), h (hour), d (day), w (week), y (year)
+# VM_RETENTION_PERIOD=12
+
+# Data storage path.
+# VM_STORAGE_PATH=/var/lib/victoria-metrics
+
+# Monitoring endpoint
+# VM_HTTP_LISTEN_ADDR=":8482"
+
+# Listen address for vminsert service
+# VM_INSERT_ADDR=":8400"
+
+# Listen address for vmselect service
+# VM_SELECT_ADDR=":8401"
+
+# Additional arguments
+VM_ARGS=

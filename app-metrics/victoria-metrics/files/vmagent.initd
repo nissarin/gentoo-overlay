@@ -1,0 +1,41 @@
+#!/sbin/openrc-run
+
+name="VictoriaMetrics lightweight scrapping service"
+description="Fast, cost-effective and scalable time series database"
+
+command="/usr/bin/vmselect"
+command_args="
+	${command_args}
+	${VM_ARGS}
+"
+command_user=victoria-metrics:victoria-metrics
+supervisor=supervise-daemon
+error_log="${error_log:-/var/log/victoria-metrics/${RC_SVCNAME}.log}"
+extra_started_commands="reload"
+
+depend() {
+        need net
+}
+
+reload() {
+	ebegin "Reloading ${RC_SVCNAME} configuration"
+	case "${supervisor}" in
+		supervise-daemon)
+			supervise-daemon ${RC_SVCNAME} --signal HUP
+			;;
+		*)
+			start-stop-daemon --pidfile "${pidfile}" --signal HUP
+			;;
+	esac
+	eend $?
+}
+
+start_pre() {
+	if [ -n "${output_log}" ]; then
+		checkpath -d -o ${command_user} "$(dirname "${output_log}")"
+	fi
+
+	if [ -n "${error_log}" ]; then
+		checkpath -d -o ${command_user} "$(dirname "${error_log}")"
+	fi
+}
