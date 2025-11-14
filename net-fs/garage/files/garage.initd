@@ -1,0 +1,64 @@
+#!/sbin/openrc-run
+# Copyright 2025 Gentoo Authors
+# Distributed under the terms of the GNU General Public License v2
+
+: ${GARAGE_CONFIG_FILE:=/etc/garage.toml}
+: ${GARAGE_LOG_TO_SYSLOG:=1}
+: ${GARAGE_LOG_LEVEL:=info}
+
+name="garage server"
+description="Garage is an S3-compatible distributed object storage"
+supervisor="supervise-daemon"
+command=/usr/bin/garage
+command_args="-c ${GARAGE_CONFIG_FILE} server"
+command_user="garage:garage"
+required_files="${GARAGE_CONFIG_FILE}"
+
+depend() {
+	need net
+	use logger
+}
+
+start_pre() {
+	yesno "${GARAGE_LOG_TO_SYSLOG}" || unset GARAGE_LOG_TO_SYSLOG
+	yesno "${GARAGE_LOG_TO_JOURNALD}" || unset GARAGE_LOG_TO_JOURNALD
+
+	if [ -z "${GARAGE_LOG_TO_SYSLOG}" -a -z "${GARAGE_LOG_TO_JOURNALD}" ]; then
+		checkpath -d -o ${command_user} "/var/log/${RC_SVCNAME}"
+
+		error_log="/var/log/${RC_SVCNAME}/${RC_SVCNAME}.log"
+		output_log="/var/log/${RC_SVCNAME}/${RC_SVCNAME}.log"
+	fi
+
+	local env_args="-e RUST_LOG=garage=${GARAGE_LOG_LEVEL}"
+
+	if [ -n "${GARAGE_LOG_TO_SYSLOG}" ]; then
+		env_args="${env_args} -e GARAGE_LOG_TO_SYSLOG=${GARAGE_LOG_TO_SYSLOG}"
+	fi
+	if [ -n "${GARAGE_LOG_TO_JOURNALD}" ]; then
+		env_args="${env_args} -e GARAGE_LOG_TO_JOURNALD=${GARAGE_LOG_TO_JOURNALD}"
+	fi
+	if [ -n "${GARAGE_ALLOW_WORLD_READABLE_SECRETS}" ]; then
+		env_args="${env_args} -e GARAGE_ALLOW_WORLD_READABLE_SECRETS=${GARAGE_ALLOW_WORLD_READABLE_SECRETS}"
+	fi
+	if [ -n "${GARAGE_RPC_SECRET}" ]; then
+		env_args="${env_args} -e GARAGE_RPC_SECRET=${GARAGE_RPC_SECRET}"
+	fi
+	if [ -n "${GARAGE_RPC_SECRET_FILE}" ]; then
+		env_args="${env_args} -e GARAGE_RPC_SECRET_FILE=${GARAGE_RPC_SECRET_FILE}"
+	fi
+	if [ -n "${GARAGE_ADMIN_TOKEN}" ]; then
+		env_args="${env_args} -e GARAGE_ADMIN_TOKEN=${GARAGE_ADMIN_TOKEN}"
+	fi
+	if [ -n "${GARAGE_ADMIN_TOKEN_FILE}" ]; then
+		env_args="${env_args} -e GARAGE_ADMIN_TOKEN_FILE=${GARAGE_ADMIN_TOKEN_FILE}"
+	fi
+	if [ -n "${GARAGE_METRICS_TOKEN}" ]; then
+		env_args="${env_args} -e GARAGE_METRICS_TOKEN=${GARAGE_METRICS_TOKEN}}"
+	fi
+	if [ -n "${GARAGE_METRICS_TOKEN_FILE}" ]; then
+		fnv_args="${env_args} -e GARAGE_METRICS_TOKEN_FILE=${GARAGE_METRICS_TOKEN_FILE}"
+	fi
+
+	supervise_daemon_args="${supervise_daemon_args} ${env_args}"
+}

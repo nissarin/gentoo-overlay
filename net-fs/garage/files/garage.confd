@@ -1,0 +1,21 @@
+# Configuration file
+# GARAGE_CONFIG_FILE=/etc/garage.toml
+
+# Enable logging to syslog instead of stderr
+# GARAGE_LOG_TO_SYSLOG=1
+
+# Enable logging to journald instead of stderr
+# GARAGE_LOG_TO_JOURNALD=
+
+# Log level.
+# Available log levels: error, warn, info, debug, trace
+# GARAGE_LOG_LEVEL=info
+
+# Configuration file overrides
+# GARAGE_ALLOW_WORLD_READABLE_SECRETS=
+# GARAGE_RPC_SECRET=
+# GARAGE_RPC_SECRET_FILE=
+# GARAGE_ADMIN_TOKEN=
+# GARAGE_ADMIN_TOKEN_FILE=
+# GARAGE_METRICS_TOKEN=
+# GARAGE_METRICS_TOKEN_FILE=
