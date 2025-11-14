@@ -1,0 +1,193 @@
+diff --git a/src/plugins/linux-cp/lcp_router.c b/src/plugins/linux-cp/lcp_router.c
+index ec2704b46..b17dcc86c 100644
+--- a/src/plugins/linux-cp/lcp_router.c
++++ b/src/plugins/linux-cp/lcp_router.c
+@@ -1359,6 +1359,7 @@ lcp_router_route_add (struct rtnl_route *rr, int is_replace)
+   lcp_router_route_mk_prefix (rr, &pfx);
+   entry_flags = lcp_router_route_mk_entry_flags (rtype, table_id, rproto);
+ 
++  nlt = lcp_router_table_add_or_lock (table_id, pfx.fp_proto);
+   /* Skip any kernel routes and IPv6 LL or multicast routes */
+   if (rproto == RTPROT_KERNEL ||
+       (FIB_PROTOCOL_IP6 == pfx.fp_proto &&
+@@ -1386,8 +1387,6 @@ lcp_router_route_add (struct rtnl_route *rr, int is_replace)
+ 
+   if (0 != vec_len (np.paths))
+     {
+-      nlt = lcp_router_table_add_or_lock (table_id, pfx.fp_proto);
+-
+       if (rtype == RTN_MULTICAST)
+ 	{
+ 	  /* it's not clear to me how linux expresses the RPF paramters
+@@ -1451,16 +1450,6 @@ lcp_router_route_add (struct rtnl_route *rr, int is_replace)
+       LCP_ROUTER_DBG ("no paths for route: %d:%U %U",
+ 		      rtnl_route_get_table (rr), format_fib_prefix, &pfx,
+ 		      format_fib_entry_flags, entry_flags);
+-
+-      nlt =
+-	lcp_router_table_find (lcp_router_table_k2f (table_id), pfx.fp_proto);
+-
+-      if (is_replace && nlt)
+-	{
+-	  fib_source_t fib_src;
+-	  fib_src = lcp_router_proto_fib_source (rproto);
+-	  fib_table_entry_delete (nlt->nlt_fib_index, &pfx, fib_src);
+-	}
+     }
+   vec_free (np.paths);
+ }
+diff --git a/src/plugins/memif/memif.c b/src/plugins/memif/memif.c
+index ad8512ac8..2887ff4ae 100644
+--- a/src/plugins/memif/memif.c
++++ b/src/plugins/memif/memif.c
+@@ -647,7 +647,7 @@ memif_process (vlib_main_t * vm, vlib_node_runtime_t * rt, vlib_frame_t * f)
+   clib_socket_t *sock;
+   uword *event_data = 0, event_type;
+   u8 enabled = 0;
+-  f64 start_time, last_run_duration = 0, now;
++  f64 start_time, last_run_duration = 0;
+   clib_error_t *err;
+ 
+   sock = clib_mem_alloc (sizeof (clib_socket_t));
+@@ -683,14 +683,8 @@ memif_process (vlib_main_t * vm, vlib_node_runtime_t * rt, vlib_frame_t * f)
+       last_run_duration = start_time = vlib_time_now (vm);
+       pool_foreach (mif, mm->interfaces)
+          {
+-	  memif_socket_file_t * msf = vec_elt_at_index (mm->socket_files, mif->socket_file_index);
+-	  /* Allow no more than 10us without a pause */
+-	  now = vlib_time_now (vm);
+-	  if (now > start_time + 10e-6)
+-	    {
+-	      vlib_process_suspend (vm, 100e-6);	/* suspend for 100 us */
+-	      start_time = vlib_time_now (vm);
+-	    }
++	  memif_socket_file_t *msf =
++	    vec_elt_at_index (mm->socket_files, mif->socket_file_index);
+ 
+ 	  if ((mif->flags & MEMIF_IF_FLAG_ADMIN_UP) == 0)
+ 	    continue;
+diff --git a/src/vlib/node_funcs.h b/src/vlib/node_funcs.h
+index a5096911d..2e5d9ef86 100644
+--- a/src/vlib/node_funcs.h
++++ b/src/vlib/node_funcs.h
+@@ -71,8 +71,9 @@ vlib_process_finish_switch_stack (vlib_main_t * vm)
+   const void *bottom_old;
+   size_t size_old;
+ 
+-  __sanitizer_finish_switch_fiber (&vm->asan_stack_save, &bottom_old,
++  __sanitizer_finish_switch_fiber (vm->asan_stack_save, &bottom_old,
+ 				   &size_old);
++  vm->asan_stack_save = NULL;
+ #endif
+ }
+ 
+diff --git a/src/vnet/interface/monitor.c b/src/vnet/interface/monitor.c
+index 3ae1fd291..f553f8580 100644
+--- a/src/vnet/interface/monitor.c
++++ b/src/vnet/interface/monitor.c
+@@ -28,13 +28,13 @@ monitor_interface_command_fn (vlib_main_t *vm, unformat_input_t *input,
+   clib_error_t *error = 0;
+   vlib_counter_t vrx[2], vtx[2];
+   f64 ts[2];
+-  u32 hw_if_index = ~0;
++  u32 sw_if_index = ~0;
+   u8 spin = 0;
+ 
+   while (unformat_check_input (input) != UNFORMAT_END_OF_INPUT)
+     {
+-      if (unformat (input, "%U", unformat_vnet_hw_interface, vnm,
+-		    &hw_if_index))
++      if (unformat (input, "%U", unformat_vnet_sw_interface, vnm,
++		    &sw_if_index))
+ 	;
+       else if (unformat (input, "interval %f", &refresh_interval))
+ 	;
+@@ -48,15 +48,15 @@ monitor_interface_command_fn (vlib_main_t *vm, unformat_input_t *input,
+ 	}
+     }
+ 
+-  if (hw_if_index == ~0)
++  if (sw_if_index == ~0)
+     {
+       error = clib_error_return (0, "no interface passed");
+       goto done;
+     }
+ 
+-  vlib_get_combined_counter (counters + VNET_INTERFACE_COUNTER_RX, hw_if_index,
++  vlib_get_combined_counter (counters + VNET_INTERFACE_COUNTER_RX, sw_if_index,
+ 			     &vrx[spin]);
+-  vlib_get_combined_counter (counters + VNET_INTERFACE_COUNTER_TX, hw_if_index,
++  vlib_get_combined_counter (counters + VNET_INTERFACE_COUNTER_TX, sw_if_index,
+ 			     &vtx[spin]);
+   ts[spin] = vlib_time_now (vm);
+ 
+@@ -83,9 +83,9 @@ monitor_interface_command_fn (vlib_main_t *vm, unformat_input_t *input,
+ 	}
+       spin ^= 1;
+       vlib_get_combined_counter (counters + VNET_INTERFACE_COUNTER_RX,
+-				 hw_if_index, &vrx[spin]);
++				 sw_if_index, &vrx[spin]);
+       vlib_get_combined_counter (counters + VNET_INTERFACE_COUNTER_TX,
+-				 hw_if_index, &vtx[spin]);
++				 sw_if_index, &vtx[spin]);
+       ts[spin] = vlib_time_now (vm);
+ 
+       tsd = ts[spin] - ts[spin ^ 1];
+diff --git a/src/vnet/ip/ip_path_mtu_node.c b/src/vnet/ip/ip_path_mtu_node.c
+index cadf1cbe1..24194ecda 100644
+--- a/src/vnet/ip/ip_path_mtu_node.c
++++ b/src/vnet/ip/ip_path_mtu_node.c
+@@ -22,6 +22,7 @@
+ 
+ typedef enum
+ {
++  IP_PMTU_FRAG_ICMP_ERROR,
+   IP_PMTU_DROP,
+   IP_PMTU_N_NEXT,
+ } ip_pmtu_next_t;
+@@ -102,12 +103,11 @@ ip_pmtu_dpo_inline (vlib_main_t *vm, vlib_node_runtime_t *node,
+ 		p0, ICMP4_destination_unreachable,
+ 		ICMP4_destination_unreachable_fragmentation_needed_and_dont_fragment_set,
+ 		ipm0->ipm_pmtu);
+-	      next0 = IP_FRAG_NEXT_ICMP_ERROR;
++	      next0 = IP_PMTU_FRAG_ICMP_ERROR;
+ 	    }
+ 	  else
+ 	    {
+-	      next0 =
+-		(error0 == IP_FRAG_ERROR_NONE ? next0 : IP_FRAG_NEXT_DROP);
++	      next0 = (error0 == IP_FRAG_ERROR_NONE ? next0 : IP_PMTU_DROP);
+ 	    }
+ 
+ 	  if (error0 == IP_FRAG_ERROR_NONE)
+@@ -178,6 +178,7 @@ VLIB_REGISTER_NODE (ip4_ip_pmtu_dpo_node) = {
+   .n_next_nodes = IP_PMTU_N_NEXT,
+   .next_nodes =
+   {
++   [IP_PMTU_FRAG_ICMP_ERROR] = "ip4-icmp-error",
+    [IP_PMTU_DROP] = "ip4-drop",
+   }
+ };
+@@ -190,6 +191,7 @@ VLIB_REGISTER_NODE (ip6_ip_pmtu_dpo_node) = {
+   .n_next_nodes = IP_PMTU_N_NEXT,
+   .next_nodes =
+   {
++   [IP_PMTU_FRAG_ICMP_ERROR] = "ip6-icmp-error",
+    [IP_PMTU_DROP] = "ip6-drop",
+   }
+ };
+diff --git a/src/vppinfra/linux/mem.c b/src/vppinfra/linux/mem.c
+index 651ea107b..bc7e0470d 100644
+--- a/src/vppinfra/linux/mem.c
++++ b/src/vppinfra/linux/mem.c
+@@ -248,6 +248,10 @@ clib_mem_vm_create_fd (clib_mem_page_sz_t log2_page_size, char *fmt, ...)
+       memfd_flags = MFD_HUGETLB | log2_page_size << MFD_HUGE_SHIFT;
+     }
+ 
++  /* Set FD_CLOEXEC flag on memory file descriptor, such that mapped memory
++   * doesn't leak through child processes if VPP crashes. */
++  memfd_flags |= MFD_CLOEXEC;
++
+   va_start (va, fmt);
+   s = va_format (0, fmt, &va);
+   va_end (va);
