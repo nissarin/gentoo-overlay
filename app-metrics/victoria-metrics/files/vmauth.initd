@@ -38,6 +38,10 @@ checkconfig() {
 		return 1
 	fi
 
+	if [ -n "${error_log}" ]; then
+		checkpath -q -d -o "${command_user}" "$(dirname "${error_log}")"
+	fi
+
 	set -o pipefail
 
 	runuser -u "${command_user%%:*}" -g "${command_user##*:}" -- "${command}" \

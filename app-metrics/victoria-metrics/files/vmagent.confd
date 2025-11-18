@@ -7,6 +7,15 @@
 # https://docs.victoriametrics.com/victoriametrics/cluster-victoriametrics/#url-format
 # VM_REMOTE_URLS=http://127.0.0.1:8427/insert/0/prometheus/api/v1/write
 
+# List of files or web URLs containing relabel configs for the corresponding VM_REMOTE_URLS
+# VM_REMOTE_URL_RELABELS=
+
+# List of files or web URLs containing relabel configs
+# VM_RELABELS=
+
+# List of listen socket for incoming requests
+# VM_HTTP_LISTEN_ADDRS=":8429"
+
 # Location of on disk queue used when ingestion can't keep up or is not 
 # available
 # VM_TMP_DATAPATH=/var/tmp/${RC_SVCNAME}

@@ -15,11 +15,11 @@ VM_ARGS="
 	${VM_ARGS}
 "
 
-for url in "${VM_RULES}"; do
+for url in ${VM_RULES}; do
 	VM_ARGS="${VM_ARGS} -rule=\"${url}\""	
 done
 
-for url in "${VM_NOTIFIER_URLS}"; do
+for url in ${VM_NOTIFIER_URLS}; do
 	VM_ARGS="${VM_ARGS} -notifier.url=\"${url}\""
 done
 
@@ -61,9 +61,15 @@ checkconfig() {
 
 	local rules=
 
-	for url in "${VM_RULES}"; do
+	for url in ${VM_RULES}; do
 		rules="${rules} -rule=\"${url}\""	
 	done
+
+	if [ -n "${error_log}" ]; then
+		checkpath -q -d -o "${command_user}" "$(dirname "${error_log}")"
+	fi
+
+	set -o pipefail
 
 	runuser -u "${command_user%%:*}" -g "${command_user##*:}" -- "${command}" \
 		-loggerLevel=FATAL \

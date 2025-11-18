@@ -22,8 +22,20 @@ VM_ARGS="
 	${VM_ARGS}
 "
 
-for url in "${VM_REMOTE_URLS}"; do
+for url in ${VM_REMOTE_URLS}; do
 	VM_ARGS="${VM_ARGS} -remoteWrite.url=\"${url}\""
+done
+
+for url in ${VM_REMOTE_URL_RELABELS}; do
+	VM_ARGS="${VM_ARGS} -remoteWrite.urlRelabelConfig=\"${url}\""
+done
+
+for url in ${VM_RELABELS}; do
+	VM_ARGS="${VM_ARGS} -remoteWrite.relabelConfig=\"${url}\""
+done
+
+for addr in ${VM_HTTP_LISTEN_ADDRS}; do
+	VM_ARGS="${VM_ARGS} -httpListenAddr=\"${addr}\""
 done
 
 command="/usr/bin/vmagent"
@@ -47,11 +59,36 @@ depend() {
 }
 
 checkconfig() {
-	[ -z "${VM_SCRAPE_CONFIG}" ] && return 0
+	local vm_args=
 
-	if [ ! -r "${VM_SCRAPE_CONFIG}" ]; then
-		eerror "$RC_SVCNAME: \`${VM_SCRAPE_CONFIG}' is not readable"
-		return 1
+	if [ -n "${VM_SCRAPE_CONFIG}" ]; then
+		if [ ! -r "${VM_SCRAPE_CONFIG}" ]; then
+			eerror "$RC_SVCNAME: \`${VM_SCRAPE_CONFIG}' is not readable"
+			return 1
+		fi
+		vm_args="${vm_args} -promscrape.config=${VM_SCRAPE_CONFIG}"
+	fi
+
+	if [ -n "${VM_REMOTE_URL_RELABELS}" ]; then
+		for url in ${VM_REMOTE_URLS}; do
+			vm_args="${vm_args} -remoteWrite.url=\"${url}\""
+		done
+
+		for url in ${VM_REMOTE_URL_RELABELS}; do
+			vm_args="${vm_args} -remoteWrite.urlRelabelConfig=\"${url}\""
+		done
+	fi
+
+	if [ -n "${VM_RELABELS}" ]; then
+		for url in ${VM_RELABELS}; do
+			vm_args="${vm_args} -remoteWrite.relabelConfig=\"${url}\""
+		done
+	fi
+
+	[ -z "${vm_args}" ] && return 0
+
+	if [ -n "${error_log}" ]; then
+		checkpath -q -d -o "${command_user}" "$(dirname "${error_log}")"
 	fi
 
 	set -o pipefail
@@ -59,13 +96,13 @@ checkconfig() {
 	runuser -u "${command_user%%:*}" -g "${command_user##*:}" -- "${command}" \
 		-loggerLevel=FATAL \
 		-loggerOutput=stdout \
-		-promscrape.config.dryRun \
-		-promscrape.config="${VM_SCRAPE_CONFIG}" |\
+		-dryRun \
+		${vm_args} |\
 	runuser -u "${command_user%%:*}" -g "${command_user##*:}" -- tee \
 		--append "${error_log:-/dev/stdout}" \
 		> /dev/null
 
-	eend $? "${RC_SVCNAME}: \`${VM_SCRAPE_CONFIG}' is invalid, check log file for errors"
+	eend $? "${RC_SVCNAME}: invalid configuration, check log file for errors"
 }
 
 reload() {
