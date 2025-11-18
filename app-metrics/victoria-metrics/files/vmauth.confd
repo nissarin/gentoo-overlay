@@ -1,2 +1,8 @@
+# Auth configuration, can point to local file or web url
+# VM_AUTH_CONFIG=/etc/victoria-metrics/${RC_SVCNAME}.yml
+
 # Additional arguments
 VM_ARGS=
+
+# Setting command_args will override all predefined variables and defaults
+# command_args=

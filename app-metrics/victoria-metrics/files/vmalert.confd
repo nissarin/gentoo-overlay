@@ -1,2 +1,28 @@
+# List of files or web URLs to YAML alerting/recording rules
+# VM_RULES=/etc/victoria-metrics/alerts/*.yml
+
+# Prometheus compatible data source
+# VM_DATASOURCE_URL=http://localhost:8427/select/0/prometheus
+
+# VictoriaMetrics instance used to persist alert states and results
+# VM_WRITE_URL=
+
+# VictoriaMetrics instance used to restore alert states
+# VM_READ_URL=
+
+# List of Alertmanager URLs
+# VM_NOTIFIER_URLS=
+
+# Sets alert source
+# Defaults to hostname
+# VM_EXTERNAL_URL=
+
+# Source link used in alerts sent to Alertmanager.
+# See https://docs.victoriametrics.com/victoriametrics/vmalert/#link-to-alert-source
+# VM_SOURCE_OVERRIDE=
+
 # Additional arguments
 VM_ARGS=
+
+# Setting command_args will override all predefined variables and defaults
+# command_args=

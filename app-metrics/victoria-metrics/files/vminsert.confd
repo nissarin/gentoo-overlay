@@ -1,8 +1,19 @@
-# Comma-separated addresses of vmstorage nodes
-# VM_STORAGE_NODE=localhost
+# List of vmstorage nodes
+# VM_STORAGE_NODES=localhost
 
 # Monitoring endpoint
 # VM_HTTP_LISTEN_ADDR=":8480"
 
+# Maximum cache size relative to system memory (percentage)
+# Defaults to 60
+# VM_MEM_ALLOWED_PCT=
+
+# Maximum cache size in bytes, overrides previous option if both are set.
+# Optional suffixes: KB, MB, GB, TB, KiB, MiB, GiB, TiB
+# VM_MEM_ALLOWED_BYTES=
+
 # Additional arguments
 VM_ARGS=
+
+# Setting command_args will override all predefined variables and defaults
+# command_args=

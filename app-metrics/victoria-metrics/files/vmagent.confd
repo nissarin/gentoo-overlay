@@ -1,2 +1,29 @@
+# Scrape config file, mostly Prometheus-compatible (refer to VM docs)
+# VM_SCRAPE_CONFIG=/etc/victoria-metrics/vmagent.yml
+
+# List of VictoriaMetrics/Prometheus-compatible remote storage endpoints
+# Note: this assumes that vmauth is used to authorize and route traffic, visit
+# following URL for more information:
+# https://docs.victoriametrics.com/victoriametrics/cluster-victoriametrics/#url-format
+# VM_REMOTE_URLS=http://127.0.0.1:8427/insert/0/prometheus/api/v1/write
+
+# Location of on disk queue used when ingestion can't keep up or is not 
+# available
+# VM_TMP_DATAPATH=/var/tmp/${RC_SVCNAME}
+
+# Completely disable on disk queue, may result in dropping metrics
+# VM_DISABLE_ON_DISK_QUEUE=
+
+# Maximum cache size relative to system memory (percentage)
+# Defaults to 60
+# VM_MEM_ALLOWED_PCT=
+
+# Maximum cache size in bytes, overrides previous option if both are set.
+# Optional suffixes: KB, MB, GB, TB, KiB, MiB, GiB, TiB
+# VM_MEM_ALLOWED_BYTES=
+
 # Additional arguments
 VM_ARGS=
+
+# Setting command_args will override all predefined variables and defaults
+# command_args=

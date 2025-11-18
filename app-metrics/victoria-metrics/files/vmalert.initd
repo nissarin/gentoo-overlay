@@ -1,20 +1,46 @@
 #!/sbin/openrc-run
 
-name="VictoriaMetrics alert service"
-description="Fast, cost-effective and scalable time series database"
+name="vmalert"
+description="Victoria Metrics service for executing alerting rules"
 
-command="/usr/bin/vmselect"
-command_args="
-	${command_args}
+: ${VM_DATASOURCE_URL:=http://localhost:8427/select/0/prometheus}
+: ${VM_RULES:=/etc/victoria-metrics/alerts/*.yml}
+
+VM_ARGS="
+	${VM_DATASOURCE_URL:+-datasource.url=\"${VM_DATASOURCE_URL}\"}
+	${VM_WRITE_URL:+-remoteWrite.url=\"${VM_WRITE_URL}\"}
+	${VM_READ_URL:+-remoteRead.url=\"${VM_READ_URL}\"}
+	${VM_EXTERNAL_URL:+-external.url=\"${VM_EXTERNAL_URL}\"}
+	${VM_SOURCE_OVERRIDE:+-external.alert.source=\"${VM_SOURCE_OVERRIDE}\"}
 	${VM_ARGS}
 "
-command_user=victoria-metrics:victoria-metrics
-supervisor=supervise-daemon
-error_log="${error_log:-/var/log/victoria-metrics/${RC_SVCNAME}.log}"
+
+for url in "${VM_RULES}"; do
+	VM_ARGS="${VM_ARGS} -rule=\"${url}\""	
+done
+
+for url in "${VM_NOTIFIER_URLS}"; do
+	VM_ARGS="${VM_ARGS} -notifier.url=\"${url}\""
+done
+
+command="/usr/bin/vmalert"
+command_args="${command_args:-"${VM_ARGS}"}"
+command_user="victoria-metrics:victoria-metrics"
+supervisor="${supervisor:-supervise-daemon}"
+
 extra_started_commands="reload"
 
+if [ -z "${output_logger}" ] && [ -z "${output_log+set}" ]; then
+	output_log="/var/log/victoria-metrics/${RC_SVCNAME}.log"
+fi
+if [ -z "${error_logger}" ] && [ -z "${error_log+set}" ]; then
+	error_log="/var/log/victoria-metrics/${RC_SVCNAME}.log"
+fi
+
 depend() {
-        need net
+	need net
+	before vmselect
+	before vmauth
 }
 
 reload() {
@@ -30,12 +56,35 @@ reload() {
 	eend $?
 }
 
+checkconfig() {
+	[ -z "${VM_RULES}" ] && return 0
+
+	local rules=
+
+	for url in "${VM_RULES}"; do
+		rules="${rules} -rule=\"${url}\""	
+	done
+
+	runuser -u "${command_user%%:*}" -g "${command_user##*:}" -- "${command}" \
+		-loggerLevel=FATAL \
+		-loggerOutput=stdout \
+		-dryRun \
+		${rules} |\
+	runuser -u "${command_user%%:*}" -g "${command_user##*:}" -- tee \
+		--append "${error_log:-/dev/stdout}" \
+		> /dev/null
+
+	eend $? "${RC_SVCNAME}: invalid rules, check log file for errors"
+}
+
 start_pre() {
+	checkconfig || return $?
+
 	if [ -n "${output_log}" ]; then
-		checkpath -d -o ${command_user} "$(dirname "${output_log}")"
+		checkpath -q -d -o "${command_user}" "$(dirname "${output_log}")"
 	fi
 
 	if [ -n "${error_log}" ]; then
-		checkpath -d -o ${command_user} "$(dirname "${error_log}")"
+		checkpath -q -d -o "${command_user}" "$(dirname "${error_log}")"
 	fi
 }

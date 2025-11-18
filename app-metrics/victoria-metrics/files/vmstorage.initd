@@ -1,31 +1,40 @@
 #!/sbin/openrc-run
 
-name="VictoriaMetrics storage service"
-description="Fast, cost-effective and scalable time series database"
+name="vmstorage"
+description="Victoria Metrics storage service"
 
-: ${VM_RETENTION_PERIOD:=12}
-: ${VM_STORAGE_PATH:=/var/lib/victoria-metrics}
-: ${VM_HTTP_LISTEN_ADDR:=:8482}
-: ${VM_INSERT_ADDR:=:8400}
-: ${VM_SELECT_ADDR:=:8401}
+: ${VM_RETENTION_PERIOD:=3}
+: ${VM_STORAGE_PATH:=/var/lib/victoria-metrics/"${RC_SVCNAME}"}
 
-command="/usr/bin/vmstorage"
-command_args="
-	${command_args} 
+VM_ARGS="
 	-storageDataPath=\"${VM_STORAGE_PATH}\"
 	-retentionPeriod=\"${VM_RETENTION_PERIOD}\"
-	-httpListenAddr=\"${VM_HTTP_LISTEN_ADDR}\"
-	-vminsertAddr=\"${VM_INSERT_ADDR}\"
-	-vmselectAddr=\"${VM_SELECT_ADDR}\"
+	${VM_HTTP_LISTEN_ADDR:+-httpListenAddr=\"${VM_HTTP_LISTEN_ADDR}\"}
+	${VM_INSERT_ADDR:+-vminsertAddr=\"${VM_INSERT_ADDR}\"}
+	${VM_SELECT_ADDR:+-vmselectAddr=\"${VM_SELECT_ADDR}\"}
+	${VM_MEM_ALLOWED_BYTES:+-memory.allowedBytes=\"${VM_MEM_ALLOWED_BYTES}\"}
+	${VM_MEM_ALLOWED_PCT:+-memory.allowedPercent=\"${VM_MEM_ALLOWED_PCT}\"}
 	${VM_ARGS}
 "
-command_user=victoria-metrics:victoria-metrics
-supervisor=supervise-daemon
-error_log="${error_log:-/var/log/victoria-metrics/${RC_SVCNAME}.log}"
+
+command="/usr/bin/vmstorage"
+command_args="${command_args:-"${VM_ARGS}"}"
+command_user="victoria-metrics:victoria-metrics"
+supervisor="${supervisor:-supervise-daemon}"
+
 extra_started_commands="reload"
 
+if [ -z "${output_logger}" ] && [ -z "${output_log+set}" ]; then
+	output_log="/var/log/victoria-metrics/${RC_SVCNAME}.log"
+fi
+if [ -z "${error_logger}" ] && [ -z "${error_log+set}" ]; then
+	error_log="/var/log/victoria-metrics/${RC_SVCNAME}.log"
+fi
+
 depend() {
-        need net
+	need net
+	before vminsert
+	before vmselect
 }
 
 reload() {
@@ -42,14 +51,16 @@ reload() {
 }
 
 start_pre() {
-	checkpath -d -o ${command_user} -m755 "${VM_STORAGE_PATH}"
+	if [ -n "${VM_STORAGE_PATH}" ]; then
+		checkpath -d -o "${command_user}" -m 0755 "${VM_STORAGE_PATH}"
+	fi
 
 	if [ -n "${output_log}" ]; then
-		checkpath -d -o ${command_user} "$(dirname "${output_log}")"
+		checkpath -q -d -o "${command_user}" "$(dirname "${output_log}")"
 	fi
 
 	if [ -n "${error_log}" ]; then
-		checkpath -d -o ${command_user} "$(dirname "${error_log}")"
+		checkpath -q -d -o "${command_user}" "$(dirname "${error_log}")"
 	fi
 }
 
