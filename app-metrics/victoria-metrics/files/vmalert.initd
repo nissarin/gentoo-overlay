@@ -45,6 +45,9 @@ depend() {
 
 reload() {
 	ebegin "Reloading ${RC_SVCNAME} configuration"
+
+	checkconfig || return $?
+
 	case "${supervisor}" in
 		supervise-daemon)
 			supervise-daemon ${RC_SVCNAME} --signal HUP
