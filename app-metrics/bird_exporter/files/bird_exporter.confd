@@ -1,0 +1,29 @@
+# Enables metrics for protocol BGP
+# BIRD_EXPORTER_BGP=1
+
+# Enables metrics for protocol OSPF
+# BIRD_EXPORTER_OSPF=1
+
+# Enables metrics for protocol Kernel
+# BIRD_EXPORTER_KERNEL=1
+
+# Enables metrics for protocol Static
+# BIRD_EXPORTER_STATIC=1
+
+# Enables metrics for protocol Direct
+# BIRD_EXPORTER_DIRECT=1
+
+# Enables metrics for protocol Babel
+# BIRD_EXPORTER_BABEL=1
+
+# Enables metrics for protocol RPKI
+# BIRD_EXPORTER_RPKI=1
+
+# Enables metrics for protocol BFD
+# BIRD_EXPORTER_BFD=1
+
+# HTTP listen address
+# BIRD_EXPORTER_LISTEN=":9324"
+
+# Bird deamon control socket
+# BIRD_EXPORTER_SOCKET="/var/run/bird.ctl"

@@ -1,0 +1,45 @@
+#!/sbin/openrc-run
+# Copyright 2025 Gentoo Authors
+# Distributed under the terms of the GNU General Public License v2
+
+
+
+name="bird_exporter daemon"
+description="Prometheus exporter for bird routing daemon "
+command=/usr/bin/bird_exporter
+command_args="
+	${bird_exporter_args:--bird.v2}
+	${BIRD_EXPORTER_BGP:+-proto.bgp=${BIRD_EXPORTER_BGP}}
+	${BIRD_EXPORTER_OSPF:+-proto.ospf=${BIRD_EXPORTER_OSPF}}
+	${BIRD_EXPORTER_KERNEL:+-proto.kernel=${BIRD_EXPORTER_KERNEL}}
+	${BIRD_EXPORTER_STATIC:+-proto.static=${BIRD_EXPORTER_STATIC}}
+	${BIRD_EXPORTER_DIRECT:+-proto.direct=${BIRD_EXPORTER_DIRECT}}
+	${BIRD_EXPORTER_BABEL:+-proto.babel=${BIRD_EXPORTER_BABEL}}
+	${BIRD_EXPORTER_RPKI:+-proto.rpki=${BIRD_EXPORTER_RPKI}}
+	${BIRD_EXPORTER_BFD:+-proto.bfd=${BIRD_EXPORTER_BFD}}
+	${BIRD_EXPORTER_LISTEN:+-web.listen-address="${BIRD_EXPORTER_LISTEN}"}
+	${BIRD_EXPORTER_SOCKET:+-bird.socket="${BIRD_EXPORTER_SOCKET}"}
+"
+supervisor="${supervisor:-supervise-daemon}"
+
+if [ -z "${output_logger}" ] && [ -z "${output_log+set}" ]; then
+	output_log="/var/log/bird_exporter/${RC_SVCNAME}.log"
+fi
+if [ -z "${error_logger}" ] && [ -z "${error_log+set}" ]; then
+	error_log="/var/log/bird_exporter/${RC_SVCNAME}.log"
+fi
+
+depend() {
+	need net
+	want bird
+}
+
+start_pre() {
+	if [ -n "${output_log}" ]; then
+		checkpath -q -d -o "${command_user}" "$(dirname "${output_log}")"
+	fi
+
+	if [ -n "${error_log}" ]; then
+		checkpath -q -d -o "${command_user}" "$(dirname "${error_log}")"
+	fi
+}
