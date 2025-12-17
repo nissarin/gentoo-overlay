@@ -1,7 +1,7 @@
-From 15873dfd05e646f7aef3d2dfcc2e91a549a2d404 Mon Sep 17 00:00:00 2001
+From 221703cfd0c606ac59cbe3ea2cf0174739d8bbf5 Mon Sep 17 00:00:00 2001
 From: Wojciech Pyczak <nissarin@gmail.com>
-Date: Wed, 17 Dec 2025 10:41:19 +0100
-Subject: [PATCH 2/2] ossify
+Date: Wed, 17 Dec 2025 17:56:27 +0100
+Subject: [PATCH] ossify
 
 ---
  crates/common/src/auth/access_token.rs        |   39 -

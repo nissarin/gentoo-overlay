@@ -50,7 +50,6 @@ DOCS="CHANGELOG.md CONTRIBUTING.md LICENSES README.md SECURITY.md UPGRADING"
 
 PATCHES=(
 	"${FILESDIR}/${PN}-0.13.1-def-config.patch"
-	"${FILESDIR}/${PN}-0.15.0-fix-oss-compilation.patch"
 )
 
 src_prepare() {
@@ -118,7 +117,6 @@ src_install() {
 pkg_postinst() {
 	if use enterprise; then
 		elog "Build with enterprise features enabled, package will contain SEL licensed code."
+		elog "License text available in ${EROOT}/usr/share/doc/${P}/LICENSES/LicenseRef-SEL.txt"
 	fi
-
-	elog "Storage backends enabled: mysql, postgres, redis, rocks, s3, sqlite"
 }
