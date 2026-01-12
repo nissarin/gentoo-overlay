@@ -1,3 +1,88 @@
+diff --git a/src/CMakeLists.txt b/src/CMakeLists.txt
+index 71f0010bb..90059ba05 100644
+--- a/src/CMakeLists.txt
++++ b/src/CMakeLists.txt
+@@ -60,6 +60,14 @@ if(CMAKE_C_COMPILER_ID STREQUAL "Clang")
+   if (CMAKE_C_COMPILER_VERSION VERSION_LESS MIN_SUPPORTED_CLANG_C_COMPILER_VERSION)
+     set(COMPILER_TOO_OLD TRUE)
+   endif()
++  set(CLANG_DEFAULT_CONST_INIT_WARNING_DISABLE_VERSION 21.0.0)
++  if (CMAKE_C_COMPILER_VERSION VERSION_GREATER_EQUAL CLANG_DEFAULT_CONST_INIT_WARNING_DISABLE_VERSION)
++    add_compile_options(-Wno-default-const-init-unsafe)
++  endif()
++  set(CLANG_IMPLICIT_ENUM_CAST_WARNING_DISABLE_VERSION 21.0.0)
++  if (CMAKE_C_COMPILER_VERSION VERSION_GREATER_EQUAL CLANG_IMPLICIT_ENUM_CAST_WARNING_DISABLE_VERSION)
++      add_compile_options(-Wno-implicit-enum-enum-cast)
++  endif()
+ elseif(CMAKE_C_COMPILER_ID STREQUAL "GNU")
+   if (CMAKE_C_COMPILER_VERSION VERSION_LESS MIN_SUPPORTED_GNU_C_COMPILER_VERSION)
+     set(COMPILER_TOO_OLD TRUE)
+diff --git a/src/plugins/linux-cp/lcp_node.c b/src/plugins/linux-cp/lcp_node.c
+index 9fa1aa5bd..e664c9787 100644
+--- a/src/plugins/linux-cp/lcp_node.c
++++ b/src/plugins/linux-cp/lcp_node.c
+@@ -480,10 +480,12 @@ VLIB_REGISTER_NODE (lcp_xc_ip4) = { .name = "linux-cp-xc-ip4",
+ VNET_FEATURE_INIT (lcp_xc_ip4_ucast_node, static) = {
+   .arc_name = "ip4-unicast",
+   .node_name = "linux-cp-xc-ip4",
++  .runs_after = VNET_FEATURES ("ip4-qos-record", "ip4-qos-store"),
+ };
+ VNET_FEATURE_INIT (lcp_xc_ip4_mcast_node, static) = {
+   .arc_name = "ip4-multicast",
+   .node_name = "linux-cp-xc-ip4",
++  .runs_after = VNET_FEATURES ("ip4-qos-record", "ip4-qos-store"),
+ };
+ 
+ VLIB_REGISTER_NODE (lcp_xc_ip6) = { .name = "linux-cp-xc-ip6",
+@@ -495,10 +497,12 @@ VLIB_REGISTER_NODE (lcp_xc_ip6) = { .name = "linux-cp-xc-ip6",
+ VNET_FEATURE_INIT (lcp_xc_ip6_ucast_node, static) = {
+   .arc_name = "ip6-unicast",
+   .node_name = "linux-cp-xc-ip6",
++  .runs_after = VNET_FEATURES ("ip6-qos-record", "ip6-qos-store"),
+ };
+ VNET_FEATURE_INIT (lcp_xc_ip6_mcast_node, static) = {
+   .arc_name = "ip6-multicast",
+   .node_name = "linux-cp-xc-ip6",
++  .runs_after = VNET_FEATURES ("ip6-qos-record", "ip6-qos-store"),
+ };
+ 
+ typedef enum
+@@ -596,6 +600,7 @@ VLIB_REGISTER_NODE (
+ VNET_FEATURE_INIT (lcp_xc_mpls_node, static) = {
+   .arc_name = "mpls-input",
+   .node_name = "linux-cp-xc-mpls",
++  .runs_after = VNET_FEATURES ("mpls-qos-record"),
+ };
+ 
+ typedef enum
+@@ -719,11 +724,13 @@ VLIB_REGISTER_NODE (lcp_xc_l3_ip4_node) = {
+ VNET_FEATURE_INIT (lcp_xc_node_l3_ip4_unicast, static) = {
+   .arc_name = "ip4-unicast",
+   .node_name = "linux-cp-xc-l3-ip4",
++  .runs_after = VNET_FEATURES ("ip4-qos-record", "ip4-qos-store"),
+ };
+ 
+ VNET_FEATURE_INIT (lcp_xc_node_l3_ip4_multicaast, static) = {
+   .arc_name = "ip4-multicast",
+   .node_name = "linux-cp-xc-l3-ip4",
++  .runs_after = VNET_FEATURES ("ip4-qos-record", "ip4-qos-store"),
+ };
+ 
+ VLIB_REGISTER_NODE (lcp_xc_l3_ip6_node) = {
+@@ -742,11 +749,13 @@ VLIB_REGISTER_NODE (lcp_xc_l3_ip6_node) = {
+ VNET_FEATURE_INIT (lcp_xc_node_l3_ip6_unicast, static) = {
+   .arc_name = "ip6-unicast",
+   .node_name = "linux-cp-xc-l3-ip6",
++  .runs_after = VNET_FEATURES ("ip6-qos-record", "ip6-qos-store"),
+ };
+ 
+ VNET_FEATURE_INIT (lcp_xc_node_l3_ip6_multicast, static) = {
+   .arc_name = "ip6-multicast",
+   .node_name = "linux-cp-xc-l3-ip6",
++  .runs_after = VNET_FEATURES ("ip6-qos-record", "ip6-qos-store"),
+ };
+ 
+ #define foreach_lcp_arp                                                       \
 diff --git a/src/plugins/linux-cp/lcp_router.c b/src/plugins/linux-cp/lcp_router.c
 index ec2704b46..b17dcc86c 100644
 --- a/src/plugins/linux-cp/lcp_router.c
