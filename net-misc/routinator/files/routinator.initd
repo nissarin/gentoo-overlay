@@ -1,0 +1,46 @@
+#!/sbin/openrc-run
+# Copyright 2026 Gentoo Authors
+# Distributed under the terms of the GNU General Public License v2
+
+: ${ROUTINATOR_CONFIG:=/etc/routinator.conf}
+
+name="routinator daemon"
+description="An RPKI Validator and RTR server"
+command=/usr/sbin/routinator
+command_args="--config ${ROUTINATOR_CONFIG} ${ROUTINATOR_ARGS} server --syslog ${ROUTINATOR_SRV_ARGS}"
+command_user="routinator:routinator"
+supervisor="${supervisor:-supervise-daemon}"
+
+extra_commands="checkconfig"
+extra_started_commands="reload"
+
+description_reload="Attempt to reload the TALs and restart validation"
+
+required_files="${ROUTINATOR_CONFIG}"
+
+depend() {
+	need net
+	before bird exabgp gobgp frr
+}
+
+checkconfig() {
+	runuser -u "${command_user%%:*}" -g "${command_user##*:}" -- \
+		"${command}" --config "${ROUTINATOR_CONFIG}" config 1> /dev/null
+}
+
+reload() {
+	ebegin "Reloading configuration for ${RC_SVCNAME}"
+	case "$supervisor" in
+		supervise-daemon)
+			supervise-daemon ${RC_SVCNAME} --signal SIGUSR1
+			;;
+		*)
+			start-stop-daemon --signal SIGUSR1 --pidfile "${pidfile}"
+			;;
+	esac
+	eend $? "Failed to reload ${RC_SVCNAME}"
+}
+
+start_pre() {
+	checkconfig || return $?
+}

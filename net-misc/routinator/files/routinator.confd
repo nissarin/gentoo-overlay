@@ -1,0 +1,7 @@
+# ROUTINATOR_CONFIG=/etc/routinator.conf
+
+# Additional routinator arguments
+ROUTINATOR_ARGS=
+
+# Additional routinator server arguments
+ROUTINATOR_SRV_ARGS=
