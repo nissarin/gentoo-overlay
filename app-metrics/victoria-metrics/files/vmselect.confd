@@ -25,3 +25,9 @@ VM_ARGS=
 
 # Setting command_args will override all predefined variables and defaults
 # command_args=
+
+# Limit the number of OS threads used by program, defaults to number of logical
+# cores available or corresponding limit imposed by cgroups' cpuset, although 
+# actual number of threads used might be higher. 
+# Consider using rc_cgroup_settings="cpuset.cpus=..." if that's an issue.
+# GOMAXPROCS=

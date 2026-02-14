@@ -27,6 +27,8 @@ command="/usr/bin/vmalert"
 command_args="${command_args:-"${VM_ARGS}"}"
 command_user="victoria-metrics:victoria-metrics"
 supervisor="${supervisor:-supervise-daemon}"
+start_stop_daemon_args="${GOMAXPROCS:+--env GOMAXPROCS=${GOMAXPROCS}}"
+supervise_daemon_args="${GOMAXPROCS:+--env GOMAXPROCS=${GOMAXPROCS}}"
 
 extra_started_commands="reload"
 

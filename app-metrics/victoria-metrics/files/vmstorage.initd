@@ -3,7 +3,7 @@
 name="vmstorage"
 description="Victoria Metrics storage service"
 
-: ${VM_RETENTION_PERIOD:=3}
+: ${VM_RETENTION_PERIOD:=3M}
 : ${VM_STORAGE_PATH:=/var/lib/victoria-metrics/"${RC_SVCNAME}"}
 
 VM_ARGS="
@@ -21,6 +21,8 @@ command="/usr/bin/vmstorage"
 command_args="${command_args:-"${VM_ARGS}"}"
 command_user="victoria-metrics:victoria-metrics"
 supervisor="${supervisor:-supervise-daemon}"
+start_stop_daemon_args="${GOMAXPROCS:+--env GOMAXPROCS=${GOMAXPROCS}}"
+supervise_daemon_args="${GOMAXPROCS:+--env GOMAXPROCS=${GOMAXPROCS}}"
 
 extra_started_commands="reload"
 
