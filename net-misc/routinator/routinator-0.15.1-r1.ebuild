@@ -13,8 +13,8 @@ HOMEPAGE="https://nlnetlabs.nl/projects/routing/routinator/"
 SRC_URI="https://github.com/NLnetLabs/routinator/archive/refs/tags/v${PV}.tar.gz -> ${P}.tar.gz"
 SRC_URI+=" https://download.nizgard.eu/gentoo/${P}-crates.tar.xz"
 
-LICENSE="BSD-3.0"
-LICENSE+=" Apache-2.0 BSD CDLA-Permissive-2.0 ISC MIT MPL-2.0 Unicode-3.0"
+LICENSE="BSD"
+LICENSE+=" Apache-2.0 CDLA-Permissive-2.0 ISC MIT MPL-2.0 Unicode-3.0"
 SLOT="0"
 KEYWORDS="~amd64"
 
