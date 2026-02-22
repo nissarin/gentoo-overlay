@@ -7,7 +7,7 @@
 name="routinator daemon"
 description="An RPKI Validator and RTR server"
 command=/usr/sbin/routinator
-command_args="--config ${ROUTINATOR_CONFIG} ${ROUTINATOR_ARGS} server --syslog ${ROUTINATOR_SRV_ARGS}"
+command_args="--config ${ROUTINATOR_CONFIG} ${ROUTINATOR_ARGS} --syslog server ${ROUTINATOR_SRV_ARGS}"
 command_user="routinator:routinator"
 supervisor="${supervisor:-supervise-daemon}"
 
