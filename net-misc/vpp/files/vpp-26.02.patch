@@ -1,0 +1,43 @@
+diff --git a/src/CMakeLists.txt b/src/CMakeLists.txt
+index 2400d01e2..8fc84db3a 100644
+--- a/src/CMakeLists.txt
++++ b/src/CMakeLists.txt
+@@ -60,6 +60,14 @@ if(CMAKE_C_COMPILER_ID STREQUAL "Clang")
+   if (CMAKE_C_COMPILER_VERSION VERSION_LESS MIN_SUPPORTED_CLANG_C_COMPILER_VERSION)
+     set(COMPILER_TOO_OLD TRUE)
+   endif()
++  set(CLANG_IMPLICIT_ENUM_ENUM_CAST_DISABLE_VERSION 21.0.0)
++  if (CMAKE_C_COMPILER_VERSION VERSION_GREATER_EQUAL CLANG_IMPLICIT_ENUM_ENUM_CAST_DISABLE_VERSION )
++    add_compile_options(-Wno-implicit-enum-enum-cast)
++  endif()
++  set(CLANG_DEFAULT_CONST_INIT_FIELD_UNSAFE_DISABLE_VERSION 21.0.0)
++  if (CMAKE_C_COMPILER_VERSION VERSION_GREATER_EQUAL CLANG_DEFAULT_CONST_INIT_FIELD_UNSAFE_DISABLE_VERSION )
++    add_compile_options(-Wno-default-const-init-field-unsafe)
++  endif()
+ elseif(CMAKE_C_COMPILER_ID STREQUAL "GNU")
+   if (CMAKE_C_COMPILER_VERSION VERSION_LESS MIN_SUPPORTED_GNU_C_COMPILER_VERSION)
+     set(COMPILER_TOO_OLD TRUE)
+diff --git a/src/plugins/rdma/CMakeLists.txt b/src/plugins/rdma/CMakeLists.txt
+index 77ccaff8e..804fa7da5 100644
+--- a/src/plugins/rdma/CMakeLists.txt
++++ b/src/plugins/rdma/CMakeLists.txt
+@@ -18,7 +18,8 @@ if (NOT IBVERBS_INCLUDE_DIR)
+   return()
+ endif()
+ 
+-vpp_plugin_find_library(rdma IBVERBS_LIB libibverbs.a)
++find_library(IBVERBS_LIB NAMES libibverbs.a)
++mark_as_advanced(IBVERBS_LIB)
+ if (NOT IBVERBS_LIB)
+   vpp_plugin_find_library(rdma IBVERBS_LIB libibverbs.so)
+   if (NOT IBVERBS_LIB)
+@@ -28,7 +29,8 @@ if (NOT IBVERBS_LIB)
+   message(WARNING "-- linking rdma plugin against ibverbs shared libs")
+ endif()
+ 
+-vpp_plugin_find_library(rdma MLX5_LIB libmlx5.a)
++find_library(MLX5_LIB NAMES libmlx5.a)
++mark_as_advanced(MLX5_LIB)
+ if (MLX5_LIB)
+   string_append(RDMA_LINK_FLAGS "-Wl,--whole-archive,${MLX5_LIB},--no-whole-archive -Wl,--exclude-libs,ALL")
+ else()
