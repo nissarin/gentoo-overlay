@@ -20,17 +20,20 @@ LICENSE+="
 "
 SLOT="0"
 KEYWORDS="~amd64"
+IUSE="gui server"
 
 DEPEND="
-	media-libs/fontconfig:=
-	dev-libs/glib:=
-	x11-libs/cairo:=
-	x11-libs/gdk-pixbuf:=
-	x11-libs/pango:=
-	dev-libs/atk:=
-	gui-libs/gtk:=
-	x11-misc/xdotool:=
 	app-arch/zstd:=
+	gui? (
+		dev-libs/atk:=
+		dev-libs/glib:=
+		gui-libs/gtk:=
+		media-libs/fontconfig:=
+		x11-libs/cairo:=
+		x11-libs/gdk-pixbuf:=
+		x11-libs/pango:=
+		x11-misc/xdotool:=
+	)
 "
 RDEPEND="${DEPEND}"
 BDEPEND="
@@ -41,10 +44,23 @@ BDEPEND="
 
 src_configure() {
 	export ZSTD_SYS_USE_PKG_CONFIG=1
+	export PACKAGES=(
+		vykar-cli
+		$(usev gui vykar-gui)
+		$(usev server vykar-server)
+	)
+}
+
+src_compile() {
+	cargo_src_compile "${PACKAGES[@]/#/--package=}"
+}
+
+src_test() {
+	cargo_src_test "${PACKAGES[@]/#/--package=}"
 }
 
 src_install() {
-	newbin  "$(cargo_target_dir)/vykar" vykar
-	newbin  "$(cargo_target_dir)/vykar-gui" vykar-gui
-	newbin  "$(cargo_target_dir)/vykar-server" vykar-server
+	newbin "$(cargo_target_dir)/vykar" vykar
+	use gui && newbin "$(cargo_target_dir)/vykar-gui" vykar-gui
+	use server && newbin "$(cargo_target_dir)/vykar-server" vykar-server
 }
