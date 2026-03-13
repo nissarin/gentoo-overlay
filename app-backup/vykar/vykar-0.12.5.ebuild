@@ -16,7 +16,8 @@ SRC_URI+=" https://download.jkns.pl/gentoo/${P}-crates.tar.xz"
 LICENSE="GPL-3"
 LICENSE+="
 	Apache-2.0 Apache-2.0-with-LLVM-exceptions BSD-2 BSD Boost-1.0
-	CC0-1.0 CDLA-Permissive-2.0 ISC MIT MPL-2.0 openssl Unicode-3.0 ZLIB
+	CC0-1.0 CDLA-Permissive-2.0 ISC MIT MPL-2.0 UoI-NCSA openssl
+	Unicode-3.0 ZLIB
 "
 SLOT="0"
 KEYWORDS="~amd64"
