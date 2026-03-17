@@ -11,7 +11,7 @@ DESCRIPTION="A high performance, packet-processing stack that can run on commodi
 HOMEPAGE="https://fd.io/"
 SRC_URI="https://github.com/FDio/vpp/archive/refs/tags/v${PV}.tar.gz -> ${P}.tar.gz"
 
-VPP_VERSION="v25.06-0-g1573e751c"
+VPP_VERSION="v26.02-2-g0601a03f0"
 
 LICENSE="Apache-2.0"
 SLOT="0"
@@ -35,7 +35,7 @@ DEPEND="
 		>=net-libs/xdp-tools-1.5.5[static-libs]
 		dev-libs/libbpf[static-libs]
 	)
-	rdma? ( >=sys-cluster/rdma-core-60.0 )
+	rdma? ( >=sys-cluster/rdma-core-60.0[-static-libs] )
 "
 RDEPEND="
 	acct-user/vpp
