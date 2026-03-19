@@ -96,8 +96,8 @@ src_configure(){
 		dispatch_trace
 		dma_intel
 		dns
-		dslite
 		$(usev dpdk)
+		dslite
 		fateshare
 		flowprobe
 		geneve
@@ -119,6 +119,8 @@ src_configure(){
 		lacp
 		lb
 		$(usev lcp linux_cp)
+		$(usev lcp linux_cp_unittest)
+		$(usev lcp linux_nl)
 		lisp
 		lisp_unittest
 		lldp
@@ -145,6 +147,8 @@ src_configure(){
 		prom
 		pvti
 		quic
+		# Requires https://github.com/h2o/quicly
+		# quic_quicly
 		$(usev rdma)
 		# dev-libs/libcbor
 		# sasc

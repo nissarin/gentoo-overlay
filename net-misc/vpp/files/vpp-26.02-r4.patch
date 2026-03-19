@@ -1,0 +1,270 @@
+diff --git a/build/external/packages/ipsec-mb.mk b/build/external/packages/ipsec-mb.mk
+index 59a1365eb..edf150071 100644
+--- a/build/external/packages/ipsec-mb.mk
++++ b/build/external/packages/ipsec-mb.mk
+@@ -37,21 +37,25 @@ define  ipsec-mb_build_cmds
+ endef
+ 
+ ifneq   ($(ipsec-mb_system_header), )
+-	ipsec-mb_system_ver_str := $(shell awk '/^#define\s+IMB_VERSION_STR/ { print $$3 }' \
+-	$(ipsec-mb_system_header))
++	ipsec-mb_system_ver_str := $(shell awk '/^#define[[:space:]]+IMB_VERSION_STR/ { gsub(/"/, "", $$3); print $$3; exit }' \
++	$(ipsec-mb_system_header) 2>/dev/null)
+ endif
+ 
+-define  ipsec-mb_install_cmds
+-	if [[ -n "$(ipsec-mb_system_header)" ]]; then \
+-		if [[ "$(ipsec-mb_system_ver_str)" != "$(ipsec-mb_version_str)" ]]; then \
+-		echo "Intel-ipsec-mb build Error: System installed Intel IPsec-mb lib \
+-		version mismatch with target version, \
+-		expecting $(ipsec-mb_version_str), \
+-		but system has $(ipsec-mb_system_ver_str) \
+-		please align/remove system installed $(ipsec-mb_system_header) before building."; \
+-		exit 1; \
+-		fi \
++ifneq   ($(ipsec-mb_system_ver_str), )
++define ipsec-mb_version_check_cmd
++	if [[ "$(ipsec-mb_system_ver_str)" != "$(ipsec-mb_version_str)" ]]; then \
++	echo "Intel-ipsec-mb build Error: System installed Intel IPsec-mb lib \
++	version mismatch with target version, \
++	expecting $(ipsec-mb_version_str), \
++	but system has $(ipsec-mb_system_ver_str) \
++	please align/remove system installed $(ipsec-mb_system_header) before building."; \
++	exit 1; \
+ 	fi
++endef
++endif
++
++define  ipsec-mb_install_cmds
++	$(ipsec-mb_version_check_cmd)
+ 	@mkdir -p $(ipsec-mb_install_dir)/include
+ 	@mkdir -p $(ipsec-mb_install_dir)/lib
+ 	@cp $(ipsec-mb_src_dir)/lib/intel-ipsec-mb.h $(ipsec-mb_install_dir)/include
+@@ -59,5 +63,3 @@ define  ipsec-mb_install_cmds
+ endef
+ 
+ $(eval $(call package,ipsec-mb))
+-
+-
+diff --git a/src/CMakeLists.txt b/src/CMakeLists.txt
+index 2400d01e2..8fc84db3a 100644
+--- a/src/CMakeLists.txt
++++ b/src/CMakeLists.txt
+@@ -60,6 +60,14 @@ if(CMAKE_C_COMPILER_ID STREQUAL "Clang")
+   if (CMAKE_C_COMPILER_VERSION VERSION_LESS MIN_SUPPORTED_CLANG_C_COMPILER_VERSION)
+     set(COMPILER_TOO_OLD TRUE)
+   endif()
++  set(CLANG_IMPLICIT_ENUM_ENUM_CAST_DISABLE_VERSION 21.0.0)
++  if (CMAKE_C_COMPILER_VERSION VERSION_GREATER_EQUAL CLANG_IMPLICIT_ENUM_ENUM_CAST_DISABLE_VERSION )
++    add_compile_options(-Wno-implicit-enum-enum-cast)
++  endif()
++  set(CLANG_DEFAULT_CONST_INIT_FIELD_UNSAFE_DISABLE_VERSION 21.0.0)
++  if (CMAKE_C_COMPILER_VERSION VERSION_GREATER_EQUAL CLANG_DEFAULT_CONST_INIT_FIELD_UNSAFE_DISABLE_VERSION )
++    add_compile_options(-Wno-default-const-init-field-unsafe)
++  endif()
+ elseif(CMAKE_C_COMPILER_ID STREQUAL "GNU")
+   if (CMAKE_C_COMPILER_VERSION VERSION_LESS MIN_SUPPORTED_GNU_C_COMPILER_VERSION)
+     set(COMPILER_TOO_OLD TRUE)
+diff --git a/src/plugins/af_xdp/device.c b/src/plugins/af_xdp/device.c
+index 7a62f612a..7611d8dd9 100644
+--- a/src/plugins/af_xdp/device.c
++++ b/src/plugins/af_xdp/device.c
+@@ -140,16 +140,14 @@ af_xdp_remove_program (af_xdp_device_t *ad)
+   int ns_fds[2];
+ 
+   af_xdp_enter_netns (ad->netns, ns_fds);
+-  ret = bpf_xdp_query_id (ad->linux_ifindex, XDP_FLAGS_UPDATE_IF_NOEXIST,
+-			  &curr_prog_id);
++  ret = bpf_xdp_query_id (ad->linux_ifindex, 0, &curr_prog_id);
+   if (ret != 0)
+     {
+       af_xdp_log (VLIB_LOG_LEVEL_ERR, ad, "bpf_xdp_query_id failed\n");
+       goto err0;
+     }
+ 
+-  ret = bpf_xdp_detach (ad->linux_ifindex, XDP_FLAGS_UPDATE_IF_NOEXIST, NULL);
+-  if (ret != 0)
++  if (curr_prog_id && (ret = bpf_xdp_detach (ad->linux_ifindex, 0, NULL)))
+     {
+       af_xdp_log (VLIB_LOG_LEVEL_ERR, ad, "bpf_xdp_detach failed\n");
+       goto err0;
+diff --git a/src/plugins/linux-cp/lcp_interface.c b/src/plugins/linux-cp/lcp_interface.c
+index 52a7ddfc9..0446fb1e9 100644
+--- a/src/plugins/linux-cp/lcp_interface.c
++++ b/src/plugins/linux-cp/lcp_interface.c
+@@ -264,7 +264,9 @@ lcp_itf_pair_add (u32 host_sw_if_index, u32 phy_sw_if_index, u8 *host_name,
+   lip_db_by_phy[phy_sw_if_index] = lipi;
+   lip_db_by_host[host_sw_if_index] = lipi;
+ 
+-  if (clib_strcmp ((char *) ns, (char *) lcp_get_default_ns ()) == 0)
++  u8 *default_ns = lcp_get_default_ns ();
++  if ((ns == NULL && default_ns == NULL) ||
++      (ns && default_ns && clib_strcmp ((char *) ns, (char *) default_ns) == 0))
+     {
+       hash_set (lip_db_by_vif, host_index, lipi);
+     }
+diff --git a/src/plugins/rdma/CMakeLists.txt b/src/plugins/rdma/CMakeLists.txt
+index 77ccaff8e..62f343fcd 100644
+--- a/src/plugins/rdma/CMakeLists.txt
++++ b/src/plugins/rdma/CMakeLists.txt
+@@ -18,7 +18,8 @@ if (NOT IBVERBS_INCLUDE_DIR)
+   return()
+ endif()
+ 
+-vpp_plugin_find_library(rdma IBVERBS_LIB libibverbs.a)
++find_library(IBVERBS_LIB NAMES libibverbs.a)
++mark_as_advanced(IBVERBS_LIB)
+ if (NOT IBVERBS_LIB)
+   vpp_plugin_find_library(rdma IBVERBS_LIB libibverbs.so)
+   if (NOT IBVERBS_LIB)
+@@ -28,7 +29,8 @@ if (NOT IBVERBS_LIB)
+   message(WARNING "-- linking rdma plugin against ibverbs shared libs")
+ endif()
+ 
+-vpp_plugin_find_library(rdma MLX5_LIB libmlx5.a)
++find_library(MLX5_LIB NAMES libmlx5.a)
++mark_as_advanced(MLX5_LIB)
+ if (MLX5_LIB)
+   string_append(RDMA_LINK_FLAGS "-Wl,--whole-archive,${MLX5_LIB},--no-whole-archive -Wl,--exclude-libs,ALL")
+ else()
+@@ -84,4 +86,5 @@ add_vpp_plugin(rdma
+ 
+   LINK_LIBRARIES
+   ${IBVERBS_LIB}
++  ${MLX5_LIB}
+ )
+diff --git a/src/vnet/ip/reass/ip4_full_reass.c b/src/vnet/ip/reass/ip4_full_reass.c
+index c169d641f..3b69a4c4e 100644
+--- a/src/vnet/ip/reass/ip4_full_reass.c
++++ b/src/vnet/ip/reass/ip4_full_reass.c
+@@ -618,6 +618,8 @@ ip4_full_reass_finalize (vlib_main_t * vm, vlib_node_runtime_t * node,
+   vlib_buffer_t *last_b = NULL;
+   u32 sub_chain_bi = reass->first_bi;
+   u32 total_length = 0;
++  u32 *vec_drop_compress = NULL;
++  ip4_full_reass_rc_t rv = IP4_REASS_RC_OK;
+   do
+     {
+       u32 tmp_bi = sub_chain_bi;
+@@ -627,7 +629,8 @@ ip4_full_reass_finalize (vlib_main_t * vm, vlib_node_runtime_t * node,
+       if (vnb->ip.reass.range_first < vnb->ip.reass.fragment_first ||
+ 	  vnb->ip.reass.range_last <= vnb->ip.reass.fragment_first)
+ 	{
+-	  return IP4_REASS_RC_INTERNAL_ERROR;
++	  rv = IP4_REASS_RC_INTERNAL_ERROR;
++	  goto free_buffers_and_return;
+ 	}
+ 
+       u32 data_len = ip4_full_reass_buffer_get_data_len (tmp);
+@@ -640,14 +643,16 @@ ip4_full_reass_finalize (vlib_main_t * vm, vlib_node_runtime_t * node,
+ 	  /* first buffer - keep ip4 header */
+ 	  if (0 != ip4_full_reass_buffer_get_data_offset (tmp))
+ 	    {
+-	      return IP4_REASS_RC_INTERNAL_ERROR;
++	      rv = IP4_REASS_RC_INTERNAL_ERROR;
++	      goto free_buffers_and_return;
+ 	    }
+ 	  trim_front = 0;
+ 	  trim_end = vlib_buffer_length_in_chain (vm, tmp) - data_len -
+ 	    ip4_header_bytes (ip);
+ 	  if (!(vlib_buffer_length_in_chain (vm, tmp) - trim_end > 0))
+ 	    {
+-	      return IP4_REASS_RC_INTERNAL_ERROR;
++	      rv = IP4_REASS_RC_INTERNAL_ERROR;
++	      goto free_buffers_and_return;
+ 	    }
+ 	}
+       u32 keep_data =
+@@ -663,13 +668,14 @@ ip4_full_reass_finalize (vlib_main_t * vm, vlib_node_runtime_t * node,
+ 		  trim_front -= tmp->current_length;
+ 		  if (!(tmp->flags & VLIB_BUFFER_NEXT_PRESENT))
+ 		    {
+-		      return IP4_REASS_RC_INTERNAL_ERROR;
++		      rv = IP4_REASS_RC_INTERNAL_ERROR;
++		      goto free_buffers_and_return;
+ 		    }
+ 		  tmp->flags &= ~VLIB_BUFFER_NEXT_PRESENT;
+ 		  tmp_bi = tmp->next_buffer;
+ 		  tmp->next_buffer = 0;
+ 		  tmp = vlib_get_buffer (vm, tmp_bi);
+-		  vlib_buffer_free_one (vm, to_be_freed_bi);
++		  vec_add1 (vec_drop_compress, to_be_freed_bi);
+ 		  continue;
+ 		}
+ 	      else
+@@ -696,7 +702,8 @@ ip4_full_reass_finalize (vlib_main_t * vm, vlib_node_runtime_t * node,
+ 		  keep_data -= tmp->current_length;
+ 		  if (!(tmp->flags & VLIB_BUFFER_NEXT_PRESENT))
+ 		    {
+-		      return IP4_REASS_RC_INTERNAL_ERROR;
++		      rv = IP4_REASS_RC_INTERNAL_ERROR;
++		      goto free_buffers_and_return;
+ 		    }
+ 		}
+ 	      total_length += tmp->current_length;
+@@ -715,7 +722,8 @@ ip4_full_reass_finalize (vlib_main_t * vm, vlib_node_runtime_t * node,
+ 	      u32 to_be_freed_bi = tmp_bi;
+ 	      if (reass->first_bi == tmp_bi)
+ 		{
+-		  return IP4_REASS_RC_INTERNAL_ERROR;
++		  rv = IP4_REASS_RC_INTERNAL_ERROR;
++		  goto free_buffers_and_return;
+ 		}
+ 	      if (tmp->flags & VLIB_BUFFER_NEXT_PRESENT)
+ 		{
+@@ -723,12 +731,12 @@ ip4_full_reass_finalize (vlib_main_t * vm, vlib_node_runtime_t * node,
+ 		  tmp_bi = tmp->next_buffer;
+ 		  tmp->next_buffer = 0;
+ 		  tmp = vlib_get_buffer (vm, tmp_bi);
+-		  vlib_buffer_free_one (vm, to_be_freed_bi);
++		  vec_add1 (vec_drop_compress, to_be_freed_bi);
+ 		}
+ 	      else
+ 		{
+ 		  tmp->next_buffer = 0;
+-		  vlib_buffer_free_one (vm, to_be_freed_bi);
++		  vec_add1 (vec_drop_compress, to_be_freed_bi);
+ 		  break;
+ 		}
+ 	    }
+@@ -741,13 +749,15 @@ ip4_full_reass_finalize (vlib_main_t * vm, vlib_node_runtime_t * node,
+ 
+   if (!last_b)
+     {
+-      return IP4_REASS_RC_INTERNAL_ERROR;
++      rv = IP4_REASS_RC_INTERNAL_ERROR;
++      goto free_buffers_and_return;
+     }
+   last_b->flags &= ~VLIB_BUFFER_NEXT_PRESENT;
+ 
+   if (total_length < first_b->current_length)
+     {
+-      return IP4_REASS_RC_INTERNAL_ERROR;
++      rv = IP4_REASS_RC_INTERNAL_ERROR;
++      goto free_buffers_and_return;
+     }
+   total_length -= first_b->current_length;
+   first_b->flags |= VLIB_BUFFER_TOTAL_LENGTH_VALID;
+@@ -758,7 +768,8 @@ ip4_full_reass_finalize (vlib_main_t * vm, vlib_node_runtime_t * node,
+   ip->checksum = ip4_header_checksum (ip);
+   if (!vlib_buffer_chain_linearize (vm, first_b))
+     {
+-      return IP4_REASS_RC_NO_BUF;
++      rv = IP4_REASS_RC_NO_BUF;
++      goto free_buffers_and_return;
+     }
+   // reset to reconstruct the mbuf linking
+   first_b->flags &= ~VLIB_BUFFER_EXT_HDR_VALID;
+@@ -816,7 +827,11 @@ ip4_full_reass_finalize (vlib_main_t * vm, vlib_node_runtime_t * node,
+   *error0 = IP4_ERROR_NONE;
+   ip4_full_reass_free (rm, rt, reass);
+   reass = NULL;
+-  return IP4_REASS_RC_OK;
++
++free_buffers_and_return:
++  vlib_buffer_free (vm, vec_drop_compress, vec_len (vec_drop_compress));
++  vec_free (vec_drop_compress);
++  return rv;
+ }
+ 
+ always_inline ip4_full_reass_rc_t
