@@ -53,6 +53,12 @@ src_configure() {
 }
 
 src_compile() {
+	# aws-lc-sys: "The CPU Jitter random number generator must not be compiled
+	# with optimizations. See documentation. Use the compiler switch -O0
+	# for compiling jitterentropy.c."
+	# TODO: find how to filter flags for single crate
+	export AWS_LC_SYS_NO_JITTER_ENTROPY=1
+
 	cargo_src_compile "${PACKAGES[@]/#/--package=}"
 }
 
