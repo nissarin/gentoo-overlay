@@ -6,7 +6,7 @@ EAPI=8
 CRATES=" "
 RUST_MIN_VER="1.90.0"
 
-inherit cargo
+inherit cargo desktop
 
 SKIA_VER="m142-0.89.1"
 SKIA_BIN_VER="0.90.0"
@@ -41,7 +41,10 @@ DEPEND="
 		x11-misc/xdotool:=
 	)
 "
-RDEPEND="${DEPEND}"
+RDEPEND="
+	${DEPEND}
+	dev-libs/libayatana-appindicator
+"
 BDEPEND="
 	${DEPEND}
 	virtual/pkgconfig
@@ -76,6 +79,11 @@ src_test() {
 
 src_install() {
 	newbin "$(cargo_target_dir)/vykar" vykar
-	use gui && newbin "$(cargo_target_dir)/vykar-gui" vykar-gui
 	use server && newbin "$(cargo_target_dir)/vykar-server" vykar-server
+
+	if use gui; then
+		newbin "$(cargo_target_dir)/vykar-gui" vykar-gui
+		newicon -s scalable "${S}"/docs/src/images/logo-colored-gradient.svg vykar-gui.svg
+		domenu "${S}"/crates/vykar-gui/linux/vykar-gui.desktop
+	fi
 }
