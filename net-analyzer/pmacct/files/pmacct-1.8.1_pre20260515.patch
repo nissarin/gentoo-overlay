@@ -1,0 +1,366 @@
+diff --git a/src/bgp/bgp_logdump.c b/src/bgp/bgp_logdump.c
+index 772f4412..a3c80b42 100644
+--- a/src/bgp/bgp_logdump.c
++++ b/src/bgp/bgp_logdump.c
+@@ -1441,7 +1441,7 @@ int bgp_peer_log_dynname(char *new, int newlen, char *old, struct bgp_peer *peer
+     len -= strlen(string_ptr);
+ 
+     if (peer->addr.family) addr_to_str(peer_src_ip, &peer->addr);
+-    else strlcpy(peer_src_ip, empty_peer_src_ip, strlen(peer_src_ip));
++    else strlcpy(peer_src_ip, empty_peer_src_ip, sizeof(peer_src_ip));
+ 
+     escape_ip_uscores(peer_src_ip);
+     snprintf(buf, newlen, "%s", peer_src_ip);
+diff --git a/src/bgp/bgp_lookup.c b/src/bgp/bgp_lookup.c
+index 98b890a7..528e0ed8 100644
+--- a/src/bgp/bgp_lookup.c
++++ b/src/bgp/bgp_lookup.c
+@@ -32,7 +32,8 @@ void bgp_srcdst_lookup(struct packet_ptrs *pptrs, int type, struct bgp_lookup_in
+ {
+   struct bgp_misc_structs *bms;
+   struct bgp_rt_structs *inter_domain_routing_db;
+-  struct sockaddr *sa = (struct sockaddr *) pptrs->f_agent, sa_local;
++  struct sockaddr_storage sa_local;
++  struct sockaddr *sa = (struct sockaddr *) pptrs->f_agent;
+   struct xflow_status_entry *xs_entry = (struct xflow_status_entry *) pptrs->f_status;
+   struct bgp_peer *peer;
+   struct bgp_node *default_node, *result;
+@@ -62,7 +63,7 @@ void bgp_srcdst_lookup(struct packet_ptrs *pptrs, int type, struct bgp_lookup_in
+   memset(&rd, 0, sizeof(rd));
+ 
+   if (pptrs->bta || pptrs->bta2) {
+-    sa = &sa_local;
++    sa = (struct sockaddr *) &sa_local;
+     if (pptrs->bta_af == ETHERTYPE_IP) {
+       sa->sa_family = AF_INET;
+       ((struct sockaddr_in *)sa)->sin_addr.s_addr = pptrs->bta; 
+@@ -437,22 +438,22 @@ void bgp_srcdst_lookup(struct packet_ptrs *pptrs, int type, struct bgp_lookup_in
+         if (default_node) {
+           if (info && info->attr) {
+             if (info->attr->mp_nexthop.family == AF_INET) {
+-              sa = &sa_local;
+-              memset(sa, 0, sizeof(struct sockaddr));
++              memset(&sa_local, 0, sizeof(sa_local));
++              sa = (struct sockaddr *) &sa_local;
+               sa->sa_family = AF_INET;
+               memcpy(&((struct sockaddr_in *)sa)->sin_addr, &info->attr->mp_nexthop.address.ipv4, 4);
+ 	      goto start_again_follow_default;
+             }
+             else if (info->attr->mp_nexthop.family == AF_INET6) {
+-              sa = &sa_local;
+-              memset(sa, 0, sizeof(struct sockaddr));
++              memset(&sa_local, 0, sizeof(sa_local));
++              sa = (struct sockaddr *) &sa_local;
+               sa->sa_family = AF_INET6;
+               ip6_addr_cpy(&((struct sockaddr_in6 *)sa)->sin6_addr, &info->attr->mp_nexthop.address.ipv6);
+               goto start_again_follow_default;
+             }
+             else {
+-              sa = &sa_local;
+-              memset(sa, 0, sizeof(struct sockaddr));
++              memset(&sa_local, 0, sizeof(sa_local));
++              sa = (struct sockaddr *) &sa_local;
+               sa->sa_family = AF_INET;
+               memcpy(&((struct sockaddr_in *)sa)->sin_addr, &info->attr->nexthop, 4);
+               goto start_again_follow_default;
+@@ -471,7 +472,8 @@ void bgp_follow_nexthop_lookup(struct packet_ptrs *pptrs, int type)
+ {
+   struct bgp_misc_structs *bms;
+   struct bgp_rt_structs *inter_domain_routing_db;
+-  struct sockaddr *sa = (struct sockaddr *) pptrs->f_agent, sa_local;
++  struct sockaddr *sa = (struct sockaddr *) pptrs->f_agent;
++  struct sockaddr_storage sa_local;
+   struct bgp_peer *nh_peer;
+   struct bgp_node *result_node = NULL;
+   struct bgp_info *info = NULL;
+@@ -497,7 +499,7 @@ void bgp_follow_nexthop_lookup(struct packet_ptrs *pptrs, int type)
+     bta = 0;
+     (*find_id_func)((struct id_table *)pptrs->bta_table, pptrs, &bta, NULL);
+     if (bta) {
+-      sa = &sa_local;
++      sa = (struct sockaddr *) &sa_local;
+       sa->sa_family = AF_INET;
+       ((struct sockaddr_in *)sa)->sin_addr.s_addr = bta;
+     }
+@@ -578,9 +580,9 @@ void bgp_follow_nexthop_lookup(struct packet_ptrs *pptrs, int type)
+ 
+ 	if (matched && self > 0 && ttl > 0) { 
+ 	  if (prefix_match(&ch, &nh)) self--;
+-          sa = &sa_local;
++          memset(&sa_local, 0, sizeof(sa_local));
++          sa = (struct sockaddr *) &sa_local;
+           pptrs->f_agent = (u_char *) &sa_local;
+-          memset(sa, 0, sizeof(struct sockaddr));
+           sa->sa_family = AF_INET;
+           memcpy(&((struct sockaddr_in *)sa)->sin_addr, &info->attr->mp_nexthop.address.ipv4, 4);
+ 	  saved_info = (char *) info;
+@@ -604,9 +606,9 @@ void bgp_follow_nexthop_lookup(struct packet_ptrs *pptrs, int type)
+ 
+ 	if (matched && self > 0 && ttl > 0) {
+ 	  if (prefix_match(&ch, &nh)) self--;
+-          sa = &sa_local;
++          memset(&sa_local, 0, sizeof(sa_local));
++          sa = (struct sockaddr *) &sa_local;
+           pptrs->f_agent = (u_char *) &sa_local;
+-          memset(sa, 0, sizeof(struct sockaddr));
+           sa->sa_family = AF_INET6;
+           ip6_addr_cpy(&((struct sockaddr_in6 *)sa)->sin6_addr, &info->attr->mp_nexthop.address.ipv6);
+ 	  saved_info = (char *) info;
+@@ -630,9 +632,9 @@ void bgp_follow_nexthop_lookup(struct packet_ptrs *pptrs, int type)
+ 
+ 	if (matched && self > 0 && ttl > 0) {
+ 	  if (prefix_match(&ch, &nh)) self--;
+-          sa = &sa_local;
++          memset(&sa_local, 0, sizeof(sa_local));
++          sa = (struct sockaddr *) &sa_local;
+           pptrs->f_agent = (u_char *) &sa_local;
+-          memset(sa, 0, sizeof(struct sockaddr));
+           sa->sa_family = AF_INET;
+           memcpy(&((struct sockaddr_in *)sa)->sin_addr, &info->attr->nexthop, 4);
+ 	  saved_info = (char *) info;
+diff --git a/src/bgp/bgp_msg.c b/src/bgp/bgp_msg.c
+index c8081ab5..31c4880b 100644
+--- a/src/bgp/bgp_msg.c
++++ b/src/bgp/bgp_msg.c
+@@ -300,7 +300,7 @@ int bgp_parse_open_msg(struct bgp_msg_data *bmd, char *bgp_packet_ptr, time_t no
+ 		  struct capability_add_paths cap_data;
+ 
+ 		  int cap_set = FALSE;
+-		  u_int8_t *cap_newlen_ptr; /* ptr to field of outbound cap_len */
++		  u_int8_t *cap_newlen_ptr = NULL; /* ptr to field of outbound cap_len */
+ 		  int cap_idx;
+ 		
+ 		  /* check for each AFI.SAFI included if remote can send - only then reply with receive */
+@@ -596,12 +596,11 @@ int bgp_write_notification_msg(char *msg, int msglen, u_int8_t n_major, u_int8_t
+       if (shutdown_msglen <= BGP_NOTIFY_CEASE_SM_LEN) {
+         if (msglen >= (BGP_MIN_NOTIFICATION_MSG_SIZE + shutdown_msglen)) {
+           reply_msg_ptr = (char *) (msg + BGP_MIN_NOTIFICATION_MSG_SIZE);
+-          memset(reply_msg_ptr, 0, (msglen - BGP_MIN_NOTIFICATION_MSG_SIZE));
+           bnsm_reply = (struct bgp_notification_shutdown_msg *) reply_msg_ptr;
+ 
+           bnsm_reply->bgpnsm_len = shutdown_msglen;
+-          strncpy(bnsm_reply->bgpnsm_data, shutdown_msg, shutdown_msglen);
+-	  bn_reply->bgpn_len = htons(BGP_MIN_NOTIFICATION_MSG_SIZE + shutdown_msglen + 1 /* bgpnsm_len */);
++          memcpy(bnsm_reply->bgpnsm_data, shutdown_msg, shutdown_msglen);
++          bn_reply->bgpn_len = htons(BGP_MIN_NOTIFICATION_MSG_SIZE + shutdown_msglen + 1 /* bgpnsm_len */);
+           ret += (shutdown_msglen + 1 /* bgpnsm_len */);
+ 	}
+       }
+diff --git a/src/bmp/bmp.c b/src/bmp/bmp.c
+index 008e0a6f..17e61819 100644
+--- a/src/bmp/bmp.c
++++ b/src/bmp/bmp.c
+@@ -68,7 +68,7 @@ int skinny_bmp_daemon()
+ {
+   int ret, rc, peers_idx, allowed, yes=1, do_term;
+   int peers_idx_rr = 0, max_peers_idx = 0;
+-  time_t now;
++  time_t now = 0;
+   afi_t afi;
+   safi_t safi;
+   socklen_t slen, clen;
+@@ -85,7 +85,7 @@ int skinny_bmp_daemon()
+ 
+   /* select() stuff */
+   fd_set read_descs, bkp_read_descs;
+-  int fd, select_fd, bkp_select_fd, recalc_fds, select_num;
++  int fd = -1, select_fd, bkp_select_fd, recalc_fds, select_num;
+ 
+   /* logdump time management */
+   time_t dump_refresh_deadline = {0};
+@@ -94,7 +94,7 @@ int skinny_bmp_daemon()
+   /* pcap_savefile stuff */
+   struct packet_ptrs recv_pptrs;
+   unsigned char *bmp_packet;
+-  int sf_ret, pcap_savefile_round = 1;
++  int sf_ret = 0, pcap_savefile_round = 1;
+ 
+   /* bmp_daemon_tag_map stuff */
+   struct plugin_requests req;
+diff --git a/src/bmp/bmp_logdump.h b/src/bmp/bmp_logdump.h
+index 60403f08..3c1ba366 100644
+--- a/src/bmp/bmp_logdump.h
++++ b/src/bmp/bmp_logdump.h
+@@ -86,7 +86,6 @@ struct bmp_dump_se_ll {
+ };
+ 
+ /* prototypes */
+-extern void bmp_daemon_msglog_init_amqp_host();
+ extern void bmp_dump_init_peer(struct bgp_peer *);
+ extern void bmp_dump_close_peer(struct bgp_peer *);
+ 
+diff --git a/src/conntrack.c b/src/conntrack.c
+index 679c80cb..d08c3159 100644
+--- a/src/conntrack.c
++++ b/src/conntrack.c
+@@ -434,7 +434,7 @@ void insert_conntrack_ipv6(time_t now, struct in6_addr *ip_src, struct in6_addr
+                            u_int16_t port_src, u_int16_t port_dst, u_int8_t proto,
+                            pm_class_t class, conntrack_helper helper, time_t exp)
+ {
+-  int size = sizeof(struct conntrack_ipv4);
++  int size = sizeof(struct conntrack_ipv6);
+   struct conntrack_ipv6 *ct_elem;
+ 
+   if (conntrack_ipv6_table) {
+diff --git a/src/nfacctd.c b/src/nfacctd.c
+index 34bc116f..17fdcc11 100644
+--- a/src/nfacctd.c
++++ b/src/nfacctd.c
+@@ -4020,8 +4020,8 @@ void NF_mpls_vpn_rd_from_options(struct packet_ptrs *pptrs)
+       if (ret == CDADA_SUCCESS) {
+         Log(LOG_DEBUG, "DEBUG ( %s/core ): Found VRF Name in hashmap for ingress_vrf_id %d to name %s\n", config.name, ingress_vrfid, ingress_vrf_name);
+ 
+-        strncpy(pptrs->ingress_vrf_name, ingress_vrf_name, strlen(ingress_vrf_name) + 1);
+-        strncpy(pptrs->vrf_name, ingress_vrf_name, strlen(ingress_vrf_name) + 1);
++        strlcpy(pptrs->ingress_vrf_name, ingress_vrf_name, sizeof(pptrs->ingress_vrf_name));
++        strlcpy(pptrs->vrf_name, ingress_vrf_name, sizeof(pptrs->vrf_name));
+       }
+     }
+ 
+@@ -4033,10 +4033,10 @@ void NF_mpls_vpn_rd_from_options(struct packet_ptrs *pptrs)
+       if (ret == CDADA_SUCCESS) {
+         Log(LOG_DEBUG, "DEBUG ( %s/core ): Found VRF Name in hashmap for egress_vrf_id %d to name %s\n", config.name, egress_vrfid, egress_vrf_name);
+ 
+-        strncpy(pptrs->egress_vrf_name, egress_vrf_name, strlen(egress_vrf_name) + 1);
++        strlcpy(pptrs->egress_vrf_name, egress_vrf_name, sizeof(pptrs->egress_vrf_name));
+ 
+         if ((ingress_vrfid == 0) || !strcmp(pptrs->ingress_vrf_name, "default")) {
+-          strncpy(pptrs->vrf_name, egress_vrf_name, strlen(egress_vrf_name) + 1);
++          strlcpy(pptrs->vrf_name, egress_vrf_name, sizeof(pptrs->vrf_name));
+         }
+       }
+     }
+diff --git a/src/plugin_common.c b/src/plugin_common.c
+index c08fbe1f..4e98da45 100644
+--- a/src/plugin_common.c
++++ b/src/plugin_common.c
+@@ -1190,10 +1190,10 @@ cdada_list_t *tcpflags_to_linked_list(size_t tcpflags_decimal)
+   for (idx_1 = 0; idx_1 < TCP_FLAGS; idx_1++) {
+     memset(&tcpstate, 0, sizeof(tcpstate));
+     if (!tcpflags_binary[idx_1]) {
+-      strncpy(tcpstate.flag, "NULL", (TCP_FLAG_LEN - 1));
++      strlcpy(tcpstate.flag, "NULL", sizeof(tcpstate.flag));
+     }
+     else {
+-      strncpy(tcpstate.flag, tcpflags_mask[idx_1], (TCP_FLAG_LEN - 1));
++      strlcpy(tcpstate.flag, tcpflags_mask[idx_1], sizeof(tcpstate.flag));
+     }
+     cdada_list_push_back(tcpflag_linked_list, &tcpstate);
+   }
+@@ -1251,7 +1251,7 @@ cdada_list_t *fwd_status_to_linked_list()
+   for (idx_0 = 0; idx_0 < FWD_STATUS_REASON_CODES; idx_0++) {
+     memset(&fwdstate, 0, sizeof(fwdstate));
+     fwdstate.decimal = fwd_status_decimal[idx_0];
+-    strncpy(fwdstate.description, fwd_status_description[idx_0], (FWD_TYPES_STR_LEN - 1));
++    strlcpy(fwdstate.description, fwd_status_description[idx_0], sizeof(fwdstate.description));
+ 
+     cdada_list_push_back(fwd_status_linked_list, &fwdstate);
+   }
+@@ -1278,8 +1278,7 @@ cdada_list_t *generic_delim_str_to_linked_list(const char *delimited_string, con
+ 
+   /* Safer to work on a copy of the original string */
+   char delimited_string_cpy[max_delimited_string_len];
+-  strncpy(delimited_string_cpy, delimited_string, max_delimited_string_len - 1);
+-  delimited_string_cpy[max_delimited_string_len - 1] = '\0';
++  strlcpy(delimited_string_cpy, delimited_string, sizeof(delimited_string_cpy));
+ 
+   char *saveptr = NULL;
+   for (char *token = strtok_r(delimited_string_cpy, delimiter, &saveptr); token != NULL; token = strtok_r(NULL, delimiter, &saveptr)) {
+diff --git a/src/pretag_handlers.c b/src/pretag_handlers.c
+index 0baccfb4..67ee283d 100644
+--- a/src/pretag_handlers.c
++++ b/src/pretag_handlers.c
+@@ -2736,7 +2736,7 @@ int pretag_tcp_flags_handler(struct packet_ptrs *pptrs, void *unused, void *e)
+   struct id_entry *entry = e;
+   struct struct_header_v5 *hdr = (struct struct_header_v5 *) pptrs->f_header;
+   struct template_cache_entry *tpl = (struct template_cache_entry *) pptrs->f_tpl;
+-  u_int8_t tcp_flags;
++  u_int8_t tcp_flags = 0;
+   
+   if (!pptrs->f_data) return TRUE;
+   
+@@ -4769,7 +4769,7 @@ int PT_map_index_fdata_src_net_handler(struct id_table_index *idx, int idx_hdlr,
+   SFSample *sample = (SFSample *) pptrs->f_data;
+   SFLAddress *sf_addr = &sample->ipsrc;
+   u_int8_t netmask;
+-  int ret;
++  int ret = -1;
+ 
+   if (config.acct_type == ACCT_NF) {
+     switch(hdr->version) {
+@@ -4843,7 +4843,7 @@ int PT_map_index_fdata_dst_net_handler(struct id_table_index *idx, int idx_hdlr,
+   SFSample *sample = (SFSample *) pptrs->f_data;
+   SFLAddress *sf_addr = &sample->ipdst;
+   u_int8_t netmask;
+-  int ret;
++  int ret = -1;
+ 
+   if (config.acct_type == ACCT_NF) {
+     switch(hdr->version) {
+@@ -5011,7 +5011,7 @@ int PT_map_index_fdata_tcp_flags_handler(struct id_table_index *idx, int idx_hdl
+   struct struct_header_v5 *hdr = (struct struct_header_v5 *) pptrs->f_header;
+   struct template_cache_entry *tpl = (struct template_cache_entry *) pptrs->f_tpl;
+   SFSample *sample = (SFSample *) pptrs->f_data;
+-  u_int8_t tcp_flags;
++  u_int8_t tcp_flags = 0;
+   
+   if (config.acct_type == ACCT_NF) {
+     switch (hdr->version) {
+@@ -5150,7 +5150,7 @@ int pm_pcap_interfaces_map_ifname_handler(char *filename, struct id_entry *e, ch
+ 
+   if (table && table->list) {
+     if (table->num < PCAP_MAX_INTERFACES) {
+-      strncpy(table->list[table->num].ifname, value, IFNAMSIZ);
++      strlcpy(table->list[table->num].ifname, value, IFNAMSIZ);
+       if (!strlen(table->list[table->num].ifname)) {
+         Log(LOG_ERR, "ERROR ( %s/%s ): [%s] invalid 'ifname' value: '%s'.\n", config.name, config.type, filename, value);
+         return TRUE;
+diff --git a/src/sflow.c b/src/sflow.c
+index 45cdb01b..ccee02c0 100644
+--- a/src/sflow.c
++++ b/src/sflow.c
+@@ -589,8 +589,7 @@ void readExtendedGateway(SFSample *sample)
+ 	/* mark the last one as the dst_as */
+ 	if (idx == (sample->dst_as_path_len - 1) && i == (seg_len - 1)) sample->dst_as = asNumber;
+         else {
+-          if (strlen(sample->dst_as_path) < (LARGEBUFLEN-1))
+-            strncat(sample->dst_as_path, space, 1);
++            strlcat(sample->dst_as_path, space, sizeof(sample->dst_as_path));
+         }
+       }
+     }
+@@ -635,8 +634,7 @@ void readExtendedGateway(SFSample *sample)
+       }
+ 
+       if (idx < (sample->communities_len - 1)) {
+-        if (strlen(sample->comms) < (LARGEBUFLEN-1))
+-          strncat(sample->comms, space, 1);
++        strlcat(sample->comms, space, sizeof(sample->comms));
+       }
+     }
+   }
+diff --git a/src/telemetry/telemetry.c b/src/telemetry/telemetry.c
+index 27e40780..32338828 100644
+--- a/src/telemetry/telemetry.c
++++ b/src/telemetry/telemetry.c
+@@ -93,7 +93,7 @@ int telemetry_daemon(void *t_data_void)
+ 
+   /* select() stuff */
+   fd_set read_descs, bkp_read_descs;
+-  int fd, select_fd, bkp_select_fd, recalc_fds, select_num = 0;
++  int fd = -1, select_fd, bkp_select_fd, recalc_fds, select_num = 0;
+ 
+   /* logdump time management */
+   time_t dump_refresh_deadline = {0};
+diff --git a/src/util.c b/src/util.c
+index 12e292ed..dcb4b534 100644
+--- a/src/util.c
++++ b/src/util.c
+@@ -2259,6 +2259,7 @@ int evaluate_labels_v2(struct pretag_label_filter *filter, pt_label_t *label)
+ 
+     tmp = strdup(label->val);
+     token = strtok_r(tmp, ",", &saveptr);
++    ret = FALSE;
+     while (token != NULL) {
+       /* Due to one null char super imposition in the label,
+          we must compare for one extra char len in the filter table */

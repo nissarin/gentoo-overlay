@@ -1,0 +1,45 @@
+#!/sbin/openrc-run
+# Copyright 2026 Gentoo Authors
+# Distributed under the terms of the GNU General Public License v2
+
+: ${PMACCTD_CONFDIR:=/etc/pmacctd}
+: ${PMACCTD_CONFIG:="${PMACCTD_CONFDIR}/${RC_SVCNAME}.conf"}
+
+name="${RC_SVCNAME} daemon"
+description="network monitoring tools"
+pidfile="/run/${RC_SVCNAME}.pid"
+command="/usr/bin/${RC_SVCNAME%%.*}"
+command_args="${PMACCTD_ARGS} -f \"${PMACCTD_CONFIG}\""
+command_args_background="-D -F \"${pidfile}\""
+command_progress=yes
+required_files="${PMACCTD_CONFIG}"
+retry="SIGINT/10/SIGKILL/5"
+
+extra_started_commands="reload stats"
+description_reload="Reload map files"
+description_stats="Dump statistics to logs"
+
+depend() {
+	need net
+}
+
+checkconfig() {
+	${command} -f "${PMACCTD_CONFIG}" -T config 1> /dev/null
+}
+
+start_pre() {
+	checkconfig || return 1
+}
+
+reload() {
+	checkconfig || return 1
+	ebegin "Sending USR2 signal to ${RC_SVCNAME}"
+		start-stop-daemon --signal USR2 --pidfile "${pidfile}"
+	eend $?
+}
+
+stats() {
+	ebegin "Sending USR1 signal to ${RC_SVCNAME}"
+		start-stop-daemon --signal USR1 --pidfile "${pidfile}"
+	eend $?
+}

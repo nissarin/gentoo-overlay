@@ -1,0 +1,8 @@
+# configuration directory
+# PMACCTD_CONFDIR=/etc/pmacctd
+
+# configuration file
+# PMACCTD_CONFIG=${PMACCTD_CONFDIR}/${RC_SVCNAME}.conf
+
+# extra arguments for pmacctd deamon
+# PMACCTD_ARGS=
