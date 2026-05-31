@@ -1,0 +1,25 @@
+#!/sbin/openrc-run
+# Copyright 2026 Gentoo Authors
+# Distributed under the terms of the GNU General Public License v2
+
+
+name="fastnetmon"
+description="DDoS detector"
+command=/usr/bin/fastnetmon
+command_args="${fastnetmon_args}"
+command_args_background="--daemonize --pid_logic"
+extra_commands="checkconfig"
+# set in configuration file
+: ${pidfile:=/run/fastnetmon.pid}
+
+depend() {
+	need net
+}
+
+checkconfig() {
+	${command} --configuration_check
+}
+
+start_pre() {
+	checkconfig || return 1
+}
