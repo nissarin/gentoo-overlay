@@ -15,17 +15,17 @@ SLOT="0"
 IUSE="qrencode pdf"
 
 DEPEND="
-		app-arch/7zip
-		dev-qt/qt5compat:6
-		dev-qt/qtbase:6[network,widgets,opengl,sqlite]
-		dev-qt/qtdeclarative:6
-		dev-qt/qtimageformats:6
-		dev-qt/qtmultimedia:6
-		dev-qt/qtspeech:6
-		dev-qt/qtsvg:6
-		pdf? ( app-text/poppler[qt6] )
-		qrencode? ( media-gfx/qrencode:= )
-		virtual/glu
+	app-arch/libarchive
+	dev-qt/qt5compat:6
+	dev-qt/qtbase:6[network,widgets,opengl,sqlite]
+	dev-qt/qtdeclarative:6
+	dev-qt/qtimageformats:6
+	dev-qt/qtmultimedia:6
+	dev-qt/qtspeech:6
+	dev-qt/qtsvg:6
+	pdf? ( app-text/poppler[qt6] )
+	qrencode? ( media-gfx/qrencode:= )
+	virtual/glu
 "
 RDEPEND="${DEPEND}"
 BDEPEND=""
@@ -34,8 +34,8 @@ IDEPEND="dev-util/desktop-file-utils"
 
 src_configure(){
 	local mycmakeargs=(
-		-DYACREADER_PDF_BACKENDS=$(usex pdf poppler no_pdf)
-		-DYACREADER_DECOMPRESSION_BACKENDS=7zip
+		-DPDF_BACKEND=$(usex pdf poppler no_pdf)
+		-DDECOMPRESSION_BACKEND=libarchive
 	)
 	cmake_src_configure
 }
