@@ -8,9 +8,9 @@ RUST_MIN_VER="1.90.0"
 
 inherit cargo desktop
 
-SKIA_VER="m142-0.89.1"
-SKIA_BIN_VER="0.90.0"
-SKIA_BIN_FILENAME="skia-binaries-da4579b39b75fa2187c5-x86_64-unknown-linux-gnu-gl-pdf-textlayout-vulkan.tar.gz"
+SKIA_VER="m150-0.98.1"
+SKIA_BIN_VER="0.99.0"
+SKIA_BIN_FILENAME="skia-binaries-a25a0fdb7d90429aa2d1-x86_64-unknown-linux-gnu-gl-jpegd-jpege-pdf-textlayout-vulkan.tar.gz"
 
 DESCRIPTION="A fast, encrypted, deduplicated backup tool"
 HOMEPAGE="https://vykar.borgbase.com/"
