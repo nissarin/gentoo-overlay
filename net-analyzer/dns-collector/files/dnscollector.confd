@@ -1,10 +1,8 @@
 # Configuration file
-# DNS_COLLECTOR_CONFIG=/etc/dnscollector.conf
+# DNS_COLLECTOR_CONFIG=/etc/dnscollector.yml
 
-# Logging (make sure directories exists)
-# error_log=/var/log/${RC_SVCNAME}/${RC_SVCNAME}.log
-# output_log=/var/log/${RC_SVCNAME}/${RC_SVCNAME}.log
-
-# Or use logger
-# output_logger="logger -p daemon.info -t dnscollector --"
-# error_logger="logger -p daemon.err -t dnscollector --"
+# Logging
+# output_log="${output_log:-/var/log/${RC_SVCNAME}/${RC_SVCNAME}.log}"
+# error_log="${error_log:-/var/log/${RC_SVCNAME}/${RC_SVCNAME}.log}"
+# output_logger="logger -p daemon.info -t "${RC_SVCNAME}" --"
+# error_logger="logger -p daemon.err -t "${RC_SVCNAME}" --"

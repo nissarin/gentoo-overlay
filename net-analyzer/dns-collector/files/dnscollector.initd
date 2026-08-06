@@ -1,8 +1,8 @@
 #!/sbin/openrc-run
-# Copyright 2025 Gentoo Authors
+# Copyright 2026 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
-: ${DNS_COLLECTOR_CONFIG:=/etc/dnscollector.conf}
+: ${DNS_COLLECTOR_CONFIG:=/etc/dnscollector.yml}
 
 required_files="${DNS_COLLECTOR_CONFIG}"
 
@@ -12,6 +12,7 @@ command="/usr/bin/dnscollector"
 command_args="-config ${DNS_COLLECTOR_CONFIG}"
 command_background="yes"
 pidfile="/run/${RC_SVCNAME}.pid"
+stopsig="SIGINT"
 
 extra_commands="checkconfig reload"
 
@@ -39,4 +40,11 @@ depend() {
 
 start_pre() {
 	checkconfig
+
+	if [ -n "${error_log}" ] && [ ! -e "${error_log}" ]; then
+		checkpath -d "$(dirname "${error_log}")" ${command_user:+-o "${command_user}"}
+	fi
+	if [ -n "${output_log}" ] && [ ! -e "${output_log}" ]; then
+		checkpath -d "$(dirname "${output_log}")" ${command_user:+-o "${command_user}"}
+	fi
 }
