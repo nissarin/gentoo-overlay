@@ -1,0 +1,929 @@
+diff --git a/docs/configuration/reference.rst b/docs/configuration/reference.rst
+index 243563613..41a4a3f4f 100644
+--- a/docs/configuration/reference.rst
++++ b/docs/configuration/reference.rst
+@@ -515,6 +515,7 @@ The buffers Section
+       buffers-per-numa 128000
+       default data-size 2048
+       page-size default-hugepage
++      layout packed
+       numa 1 {
+          buffers 64000
+       }
+@@ -553,6 +554,19 @@ Set the page size for buffer allocation
+    page-size default
+    page-size default-hugepage
+ 
++layout natural|packed
++^^^^^^^^^^^^^^^^^^^^^
++
++Select how buffers are laid out in the memory map. ``natural`` keeps buffers
++naturally aligned using a single stride across the map. ``packed`` restarts
++the stride at each page boundary to use small pages efficiently. The default
++is platform-dependent.
++
++.. code-block:: console
++
++   layout natural
++   layout packed
++
+ numa <numa index> { .. }
+ ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+ 
+diff --git a/src/cmake/platform/octeon10.cmake b/src/cmake/platform/octeon10.cmake
+index 06b7edda3..278f30a72 100644
+--- a/src/cmake/platform/octeon10.cmake
++++ b/src/cmake/platform/octeon10.cmake
+@@ -2,3 +2,4 @@
+ set(VPP_PLATFORM_CACHE_LINE_SIZE 64)
+ set(VPP_PLATFORM_CFLAGS -mcpu=neoverse-n2+crypto)
+ set(VPP_PLATFORM_BUFFER_ALIGN 128)
++set(VPP_PLATFORM_BUFFER_NATURAL_ALIGN ON)
+diff --git a/src/cmake/platform/octeon9.cmake b/src/cmake/platform/octeon9.cmake
+index 6217b03d2..c8d3bd8d9 100644
+--- a/src/cmake/platform/octeon9.cmake
++++ b/src/cmake/platform/octeon9.cmake
+@@ -2,3 +2,4 @@
+ set(VPP_PLATFORM_CACHE_LINE_SIZE 128)
+ set(VPP_PLATFORM_CFLAGS -march=armv8.2-a+crc+crypto)
+ set(VPP_PLATFORM_BUFFER_ALIGN 128)
++set(VPP_PLATFORM_BUFFER_NATURAL_ALIGN ON)
+diff --git a/src/drivers/armada/pp2/init.c b/src/drivers/armada/pp2/init.c
+index 27be57d83..b633c30bf 100644
+--- a/src/drivers/armada/pp2/init.c
++++ b/src/drivers/armada/pp2/init.c
+@@ -15,7 +15,7 @@
+ #include <netinet/in.h>
+ #include <sys/ioctl.h>
+ 
+-#define MV_SYS_DMA_MEM_SZ (2 << 20)
++#define MV_SYS_DMA_MEM_SZ (2 << 21)
+ 
+ VLIB_REGISTER_LOG_CLASS (mvpp2_log, static) = {
+   .class_name = "armada",
+@@ -389,7 +389,7 @@ mvpp2_init (vlib_main_t *vm, vnet_dev_t *dev)
+         .default_size = 512,
+         .multiplier = 32,
+         .min_size = 32,
+-        .max_size = 4096,
++        .max_size = 8192,
+ 	.size_is_power_of_two = 1,
+       },
+       .ops = {
+@@ -402,7 +402,7 @@ mvpp2_init (vlib_main_t *vm, vnet_dev_t *dev)
+         .default_size = 512,
+         .multiplier = 32,
+         .min_size = 32,
+-        .max_size = 4096,
++        .max_size = 8192,
+ 	.size_is_power_of_two = 1,
+           },
+       .ops = {
+diff --git a/src/drivers/armada/pp2/port.c b/src/drivers/armada/pp2/port.c
+index dff281b29..4752340a9 100644
+--- a/src/drivers/armada/pp2/port.c
++++ b/src/drivers/armada/pp2/port.c
+@@ -232,7 +232,7 @@ mvpp2_port_start (vlib_main_t *vm, vnet_dev_port_t *port)
+   foreach_vnet_dev_port_rx_queue (q, port)
+     {
+       mvpp2_rxq_t *prq = vnet_dev_get_rx_queue_data (q);
+-      prq->n_bpool_refill = VLIB_FRAME_SIZE;
++      prq->n_bpool_refill = q->size;
+       mrvl_pp2_bpool_put_no_inline (vm, q);
+       if (prq->n_bpool_refill)
+ 	log_warn (port->dev, "mrvl_pp2_bpool_put failed to fill %u buffers",
+diff --git a/src/plugins/linux-cp/lcp_router.c b/src/plugins/linux-cp/lcp_router.c
+index a2bd4c977..2daa85b9a 100644
+--- a/src/plugins/linux-cp/lcp_router.c
++++ b/src/plugins/linux-cp/lcp_router.c
+@@ -922,6 +922,64 @@ lcp_router_table_k2f (uint32_t k)
+   return k;
+ }
+ 
++static void
++lcp_router_table_add_del_special_routes (lcp_router_table_t *nlt, u8 is_add)
++{
++  if (FIB_PROTOCOL_IP4 == nlt->nlt_proto)
++    {
++      /* Set the all 1s address in this table to punt */
++      if (is_add)
++	fib_table_entry_special_add (nlt->nlt_fib_index, &pfx_all1s, lcp_rt_fib_src,
++				     FIB_ENTRY_FLAG_LOCAL);
++      else
++	fib_table_entry_special_remove (nlt->nlt_fib_index, &pfx_all1s, lcp_rt_fib_src);
++
++      const fib_route_path_t path = {
++	.frp_proto = DPO_PROTO_IP4,
++	.frp_addr = zero_addr,
++	.frp_sw_if_index = ~0,
++	.frp_fib_index = ~0,
++	.frp_weight = 1,
++	.frp_mitf_flags = MFIB_ITF_FLAG_FORWARD,
++	.frp_flags = FIB_ROUTE_PATH_LOCAL,
++      };
++      int ii;
++
++      for (ii = 0; ii < ARRAY_LEN (ip4_specials); ii++)
++	{
++	  if (is_add)
++	    mfib_table_entry_path_update (nlt->nlt_mfib_index, &ip4_specials[ii],
++					  MFIB_SOURCE_PLUGIN_LOW, MFIB_ENTRY_FLAG_NONE, &path);
++	  else
++	    mfib_table_entry_path_remove (nlt->nlt_mfib_index, &ip4_specials[ii],
++					  MFIB_SOURCE_PLUGIN_LOW, &path);
++	}
++    }
++  else if (FIB_PROTOCOL_IP6 == nlt->nlt_proto)
++    {
++      const fib_route_path_t path = {
++	.frp_proto = DPO_PROTO_IP6,
++	.frp_addr = zero_addr,
++	.frp_sw_if_index = ~0,
++	.frp_fib_index = ~0,
++	.frp_weight = 1,
++	.frp_mitf_flags = MFIB_ITF_FLAG_FORWARD,
++	.frp_flags = FIB_ROUTE_PATH_LOCAL,
++      };
++      int ii;
++
++      for (ii = 0; ii < ARRAY_LEN (ip6_specials); ii++)
++	{
++	  if (is_add)
++	    mfib_table_entry_path_update (nlt->nlt_mfib_index, &ip6_specials[ii],
++					  MFIB_SOURCE_PLUGIN_LOW, MFIB_ENTRY_FLAG_NONE, &path);
++	  else
++	    mfib_table_entry_path_remove (nlt->nlt_mfib_index, &ip6_specials[ii],
++					  MFIB_SOURCE_PLUGIN_LOW, &path);
++	}
++    }
++}
++
+ static lcp_router_table_t *
+ lcp_router_table_add_or_lock (uint32_t id, fib_protocol_t fproto)
+ {
+@@ -945,50 +1003,7 @@ lcp_router_table_add_or_lock (uint32_t id, fib_protocol_t fproto)
+       hash_set (lcp_router_table_db[fproto], nlt->nlt_id,
+ 		nlt - lcp_router_table_pool);
+ 
+-      if (FIB_PROTOCOL_IP4 == fproto)
+-	{
+-	  /* Set the all 1s address in this table to punt */
+-	  fib_table_entry_special_add (nlt->nlt_fib_index, &pfx_all1s,
+-				       lcp_rt_fib_src, FIB_ENTRY_FLAG_LOCAL);
+-
+-	  const fib_route_path_t path = {
+-	    .frp_proto = DPO_PROTO_IP4,
+-	    .frp_addr = zero_addr,
+-	    .frp_sw_if_index = ~0,
+-	    .frp_fib_index = ~0,
+-	    .frp_weight = 1,
+-	    .frp_mitf_flags = MFIB_ITF_FLAG_FORWARD,
+-	    .frp_flags = FIB_ROUTE_PATH_LOCAL,
+-	  };
+-	  int ii;
+-
+-	  for (ii = 0; ii < ARRAY_LEN (ip4_specials); ii++)
+-	    {
+-	      mfib_table_entry_path_update (
+-		nlt->nlt_mfib_index, &ip4_specials[ii], MFIB_SOURCE_PLUGIN_LOW,
+-		MFIB_ENTRY_FLAG_NONE, &path);
+-	    }
+-	}
+-      else if (FIB_PROTOCOL_IP6 == fproto)
+-	{
+-	  const fib_route_path_t path = {
+-	    .frp_proto = DPO_PROTO_IP6,
+-	    .frp_addr = zero_addr,
+-	    .frp_sw_if_index = ~0,
+-	    .frp_fib_index = ~0,
+-	    .frp_weight = 1,
+-	    .frp_mitf_flags = MFIB_ITF_FLAG_FORWARD,
+-	    .frp_flags = FIB_ROUTE_PATH_LOCAL,
+-	  };
+-	  int ii;
+-
+-	  for (ii = 0; ii < ARRAY_LEN (ip6_specials); ii++)
+-	    {
+-	      mfib_table_entry_path_update (
+-		nlt->nlt_mfib_index, &ip6_specials[ii], MFIB_SOURCE_PLUGIN_LOW,
+-		MFIB_ENTRY_FLAG_NONE, &path);
+-	    }
+-	}
++      lcp_router_table_add_del_special_routes (nlt, 1);
+     }
+ 
+   nlt->nlt_refs++;
+@@ -1003,14 +1018,10 @@ lcp_router_table_unlock (lcp_router_table_t *nlt)
+ 
+   if (0 == nlt->nlt_refs)
+     {
+-      if (FIB_PROTOCOL_IP4 == nlt->nlt_proto)
+-	{
+-	  /* Set the all 1s address in this table to punt */
+-	  fib_table_entry_special_remove (nlt->nlt_fib_index, &pfx_all1s,
+-					  lcp_rt_fib_src);
+-	}
++      lcp_router_table_add_del_special_routes (nlt, 0);
+ 
+       fib_table_unlock (nlt->nlt_fib_index, nlt->nlt_proto, lcp_rt_fib_src);
++      mfib_table_unlock (nlt->nlt_mfib_index, nlt->nlt_proto, MFIB_SOURCE_PLUGIN_LOW);
+ 
+       hash_unset (lcp_router_table_db[nlt->nlt_proto], nlt->nlt_id);
+       pool_put (lcp_router_table_pool, nlt);
+diff --git a/src/plugins/npol/npol_interface.c b/src/plugins/npol/npol_interface.c
+index 1fba8b7fb..7270bc003 100644
+--- a/src/plugins/npol/npol_interface.c
++++ b/src/plugins/npol/npol_interface.c
+@@ -7,8 +7,6 @@
+ #include <npol/npol_policy.h>
+ #include <npol/npol_format.h>
+ 
+-uword unformat_sw_if_index (unformat_input_t *input, va_list *args);
+-
+ npol_interface_config_t *npol_interface_configs;
+ 
+ int
+@@ -121,7 +119,7 @@ npol_interface_clear_cmd_fn (vlib_main_t *vm, unformat_input_t *input,
+ 
+   while (unformat_check_input (input) != UNFORMAT_END_OF_INPUT)
+     {
+-      if (unformat (input, "%U", unformat_sw_if_index, NULL, &sw_if_index))
++      if (unformat (input, "%U", unformat_vnet_sw_interface, vnet_get_main (), &sw_if_index))
+ 	;
+       else if (unformat (input, "sw_if_index %d", &sw_if_index))
+ 	;
+@@ -168,7 +166,7 @@ npol_interface_configure_cmd_fn (vlib_main_t *vm, unformat_input_t *input,
+ 
+   while (unformat_check_input (input) != UNFORMAT_END_OF_INPUT)
+     {
+-      if (unformat (input, "%U", unformat_sw_if_index, NULL, &sw_if_index))
++      if (unformat (input, "%U", unformat_vnet_sw_interface, vnet_get_main (), &sw_if_index))
+ 	;
+       else if (unformat (input, "sw_if_index %d", &sw_if_index))
+ 	;
+diff --git a/src/plugins/rdma/CMakeLists.txt b/src/plugins/rdma/CMakeLists.txt
+index 77ccaff8e..62f343fcd 100644
+--- a/src/plugins/rdma/CMakeLists.txt
++++ b/src/plugins/rdma/CMakeLists.txt
+@@ -18,7 +18,8 @@ if (NOT IBVERBS_INCLUDE_DIR)
+   return()
+ endif()
+ 
+-vpp_plugin_find_library(rdma IBVERBS_LIB libibverbs.a)
++find_library(IBVERBS_LIB NAMES libibverbs.a)
++mark_as_advanced(IBVERBS_LIB)
+ if (NOT IBVERBS_LIB)
+   vpp_plugin_find_library(rdma IBVERBS_LIB libibverbs.so)
+   if (NOT IBVERBS_LIB)
+@@ -28,7 +29,8 @@ if (NOT IBVERBS_LIB)
+   message(WARNING "-- linking rdma plugin against ibverbs shared libs")
+ endif()
+ 
+-vpp_plugin_find_library(rdma MLX5_LIB libmlx5.a)
++find_library(MLX5_LIB NAMES libmlx5.a)
++mark_as_advanced(MLX5_LIB)
+ if (MLX5_LIB)
+   string_append(RDMA_LINK_FLAGS "-Wl,--whole-archive,${MLX5_LIB},--no-whole-archive -Wl,--exclude-libs,ALL")
+ else()
+@@ -84,4 +86,5 @@ add_vpp_plugin(rdma
+ 
+   LINK_LIBRARIES
+   ${IBVERBS_LIB}
++  ${MLX5_LIB}
+ )
+diff --git a/src/plugins/rdma/device.c b/src/plugins/rdma/device.c
+index 1cd9e2d27..35e7e1ce5 100644
+--- a/src/plugins/rdma/device.c
++++ b/src/plugins/rdma/device.c
+@@ -432,9 +432,17 @@ rdma_rxq_init (vlib_main_t * vm, rdma_device_t * rd, u16 qid, u32 n_desc,
+   if (is_mlx5dv)
+     {
+       struct mlx5dv_cq_init_attr dvcq = { };
+-      dvcq.comp_mask = MLX5DV_CQ_INIT_ATTR_MASK_COMPRESSED_CQE |
+-		       MLX5DV_CQ_INIT_ATTR_MASK_CQE_SIZE;
+-      dvcq.cqe_comp_res_format = MLX5DV_CQE_RES_FORMAT_HASH;
++      uword stridx_supported =
++	(rd->cqe_comp_supported_formats & MLX5DV_CQE_RES_FORMAT_CSUM_STRIDX) != 0;
++
++      dvcq.comp_mask = MLX5DV_CQ_INIT_ATTR_MASK_CQE_SIZE;
++      if (!is_striding || stridx_supported)
++	{
++	  dvcq.comp_mask |= MLX5DV_CQ_INIT_ATTR_MASK_COMPRESSED_CQE;
++	  /* Striding RQ mini-CQEs must carry consumed-stride metadata. */
++	  dvcq.cqe_comp_res_format =
++	    is_striding ? MLX5DV_CQE_RES_FORMAT_CSUM_STRIDX : MLX5DV_CQE_RES_FORMAT_HASH;
++	}
+       dvcq.cqe_size = 64;
+       if ((cqex = mlx5dv_create_cq (rd->ctx, &cqa, &dvcq)) == 0)
+ 	return clib_error_return_unix (0, "Create mlx5dv rx CQ Failed");
+@@ -975,12 +983,14 @@ rdma_create_if (vlib_main_t * vm, rdma_create_if_args_t * args)
+   if (args->mode != RDMA_MODE_IBV)
+     {
+       struct mlx5dv_context mlx5dv_attrs = { };
+-      mlx5dv_attrs.comp_mask |= MLX5DV_CONTEXT_MASK_STRIDING_RQ;
++      mlx5dv_attrs.comp_mask |=
++	MLX5DV_CONTEXT_MASK_STRIDING_RQ | MLX5DV_CONTEXT_MASK_CQE_COMPRESION;
+ 
+       if (mlx5dv_query_device (rd->ctx, &mlx5dv_attrs) == 0)
+ 	{
+ 	  uword data_seg_log2_sz =
+ 	    min_log2 (vlib_buffer_get_default_data_size (vm));
++	  rd->cqe_comp_supported_formats = mlx5dv_attrs.cqe_comp_caps.supported_format;
+ 
+ 	  if ((mlx5dv_attrs.flags & MLX5DV_CONTEXT_FLAGS_CQE_V1))
+ 	    {
+diff --git a/src/plugins/rdma/output.c b/src/plugins/rdma/output.c
+index 73cb4a709..73cd16ce0 100644
+--- a/src/plugins/rdma/output.c
++++ b/src/plugins/rdma/output.c
+@@ -15,6 +15,9 @@
+ #define RDMA_TXQ_DV_DSEG_SZ(txq)        (RDMA_MLX5_WQE_DS * RDMA_TXQ_DV_SQ_SZ(txq))
+ #define RDMA_TXQ_DV_DSEG2WQE(d)         (((d) + RDMA_MLX5_WQE_DS - 1) / RDMA_MLX5_WQE_DS)
+ 
++/* Keep mlx5 SEND WQEs below the hardware WQE size limit. */
++#define RDMA_MLX5_WQE_DS_MAX 60
++
+ /*
+  * MLX5 direct verbs tx/free functions
+  */
+@@ -159,14 +162,11 @@ rdma_device_output_tx_mlx5_chained (vlib_main_t *vm,
+ 
+       if (b[0]->flags & VLIB_BUFFER_NEXT_PRESENT)
+ 	{
+-	  /*
+-	   * max number of available dseg:
+-	   *  - 4 dseg per WQEBB available
+-	   *  - max 32 dseg per WQE (5-bits length field in WQE ctrl)
+-	   */
+-#define RDMA_MLX5_WQE_DS_MAX    (1 << 5)
+-	  const u32 dseg_max =
+-	    clib_min (RDMA_MLX5_WQE_DS * (wqe_n - 1), RDMA_MLX5_WQE_DS_MAX);
++	  /* Additional dseg are bounded by available WQEBBs and by
++	   * the mlx5 WQE size limit. */
++	  const u32 dseg_hw_max = RDMA_MLX5_WQE_DS_MAX - RDMA_MLX5_WQE_DS;
++	  const u32 dseg_slot_max = RDMA_MLX5_WQE_DS * (wqe_n - 1);
++	  const u32 dseg_max = clib_min (dseg_hw_max, dseg_slot_max);
+ 	  vlib_buffer_t *chained_b = b[0];
+ 	  u32 chained_n = 0;
+ 
+@@ -220,9 +220,9 @@ rdma_device_output_tx_mlx5_chained (vlib_main_t *vm,
+ 					  RDMA_TXQ_BUF_SZ (txq), 1 +
+ 					  RDMA_TXQ_DV_DSEG2WQE (chained_n));
+ 	      vlib_error_count (vm, node->node_index,
+-				dseg_max == chained_n ?
+-				RDMA_TX_ERROR_SEGMENT_SIZE_EXCEEDED :
+-				RDMA_TX_ERROR_NO_FREE_SLOTS, 1);
++				chained_n == dseg_hw_max ? RDMA_TX_ERROR_SEGMENT_SIZE_EXCEEDED :
++							   RDMA_TX_ERROR_NO_FREE_SLOTS,
++				1);
+ 
+ 	      /* fixup tail to overwrite wqe head with next packet */
+ 	      tail -= 1;
+diff --git a/src/plugins/rdma/rdma.h b/src/plugins/rdma/rdma.h
+index 216b4c696..af135ac39 100644
+--- a/src/plugins/rdma/rdma.h
++++ b/src/plugins/rdma/rdma.h
+@@ -200,6 +200,7 @@ typedef struct
+   mac_address_t hwaddr;
+   u32 async_event_clib_file_index;
+   u32 dev_instance;
++  u32 cqe_comp_supported_formats;
+   rdma_rss4_t rss4;
+   rdma_rss6_t rss6;
+ 
+diff --git a/src/vlib/CMakeLists.txt b/src/vlib/CMakeLists.txt
+index 9c6c10a6d..a3f1015c6 100644
+--- a/src/vlib/CMakeLists.txt
++++ b/src/vlib/CMakeLists.txt
+@@ -27,6 +27,8 @@ if(VPP_PLATFORM_BUFFER_ALIGN)
+ else()
+   set(VLIB_BUFFER_ALIGN ${VPP_CACHE_LINE_SIZE})
+ endif()
++set(VLIB_BUFFER_NATURAL_ALIGN_DEFAULT
++    ${VPP_PLATFORM_BUFFER_NATURAL_ALIGN})
+ 
+ set(PRE_DATA_SIZE 128 CACHE STRING "Buffer headroom size.")
+ 
+diff --git a/src/vlib/buffer.c b/src/vlib/buffer.c
+index ed751f422..6bf10a607 100644
+--- a/src/vlib/buffer.c
++++ b/src/vlib/buffer.c
+@@ -449,6 +449,19 @@ vlib_buffer_alloc_size (uword ext_hdr_size, uword data_size)
+   return alloc_size;
+ }
+ 
++static_always_inline void
++vlib_buffer_pool_add_buffer (vlib_main_t *vm, vlib_buffer_main_t *bm, vlib_buffer_pool_t *bp, u8 *p)
++{
++  vlib_buffer_t *b = (vlib_buffer_t *) (p + bm->ext_hdr_size);
++  u32 bi;
++
++  b->template = bp->buffer_template;
++  bi = vlib_get_buffer_index (vm, b);
++  ASSERT (bi != 0);
++  bp->buffers[bp->n_avail++] = bi;
++  vlib_get_buffer (vm, bi);
++}
++
+ u8
+ vlib_buffer_pool_create (vlib_main_t *vm, u32 data_size, u32 physmem_map_index,
+ 			 char *fmt, ...)
+@@ -459,6 +472,8 @@ vlib_buffer_pool_create (vlib_main_t *vm, u32 data_size, u32 physmem_map_index,
+   uword start = pointer_to_uword (m->base);
+   uword size = (uword) m->n_pages << m->log2_page_size;
+   uword page_mask = ~pow2_mask (m->log2_page_size);
++  uword page_size = (uword) 1 << m->log2_page_size;
++  u8 *page_start, *page, *end;
+   u8 *p;
+   u32 alloc_size;
+   va_list va;
+@@ -520,33 +535,61 @@ vlib_buffer_pool_create (vlib_main_t *vm, u32 data_size, u32 physmem_map_index,
+ 
+   clib_spinlock_init (&bp->lock);
+ 
+-  p = m->base;
+-
+-  /* start with naturally aligned address */
+-  p += alloc_size - (uword) p % alloc_size;
+-
+-  /*
+-   * Waste 1 buffer (maximum) so that 0 is never a valid buffer index.
+-   * Allows various places to ASSERT (bi != 0). Much easier
+-   * than debugging downstream crashes in successor nodes.
+-   */
+-  if (p == m->base)
+-    p += alloc_size;
++  if (bm->layout == VLIB_BUFFER_LAYOUT_NATURAL)
++    {
++      /*
++       * Keep a single stride across the whole memory map.  Aligning the first
++       * buffer to alloc_size makes every subsequent buffer naturally aligned,
++       * as required by some platforms.  Buffers crossing a page boundary must
++       * be skipped, which can waste a significant part of small pages.
++       */
++      p = m->base;
++
++      /* start with naturally aligned address */
++      p += alloc_size - (uword) p % alloc_size;
++
++      /*
++       * Waste 1 buffer (maximum) so that 0 is never a valid buffer index.
++       * Allows various places to ASSERT (bi != 0). Much easier
++       * than debugging downstream crashes in successor nodes.
++       */
++      if (p == m->base)
++	p += alloc_size;
++
++      for (; p < (u8 *) m->base + size - alloc_size; p += alloc_size)
++	{
++	  /* skip if buffer spans across page boundary */
++	  if (((uword) p & page_mask) != ((uword) (p + alloc_size) & page_mask))
++	    continue;
+ 
+-  for (; p < (u8 *) m->base + size - alloc_size; p += alloc_size)
++	  vlib_buffer_pool_add_buffer (vm, bm, bp, p);
++	}
++    }
++  else
+     {
+-      vlib_buffer_t *b;
+-      u32 bi;
++      /*
++       * Restart the stride at every page boundary.  This guarantees that
++       * buffers do not span pages and packs each small page independently,
++       * but buffers do not retain natural alloc_size alignment across the
++       * whole memory map.
++       */
++      /*
++       * Waste 1 buffer (maximum) so that 0 is never a valid buffer index.
++       * Allows various places to ASSERT (bi != 0). Much easier
++       * than debugging downstream crashes in successor nodes.
++       */
++      page_start = m->base + alloc_size;
++
++      end = (u8 *) m->base + size;
++      for (page = m->base; page < end; page += page_size)
++	{
++	  u8 *page_end = page + page_size;
+ 
+-      /* skip if buffer spans across page boundary */
+-      if (((uword) p & page_mask) != ((uword) (p + alloc_size) & page_mask))
+-	continue;
++	  for (p = page_start; p + alloc_size <= page_end; p += alloc_size)
++	    vlib_buffer_pool_add_buffer (vm, bm, bp, p);
+ 
+-      b = (vlib_buffer_t *) (p + bm->ext_hdr_size);
+-      b->template = bp->buffer_template;
+-      bi = vlib_get_buffer_index (vm, b);
+-      bp->buffers[bp->n_avail++] = bi;
+-      vlib_get_buffer (vm, bi);
++	  page_start = page_end;
++	}
+     }
+ 
+   bp->n_buffers = bp->n_avail;
+@@ -753,6 +796,8 @@ vlib_buffer_main_alloc (vlib_main_t * vm)
+     clib_mem_alloc_aligned (sizeof (bm[0]), CLIB_CACHE_LINE_BYTES);
+   clib_memset (vm->buffer_main, 0, sizeof (bm[0]));
+   bm->default_data_size = VLIB_BUFFER_DEFAULT_DATA_SIZE;
++  bm->layout =
++    VLIB_BUFFER_NATURAL_ALIGN_DEFAULT ? VLIB_BUFFER_LAYOUT_NATURAL : VLIB_BUFFER_LAYOUT_PACKED;
+ }
+ 
+ static u32
+@@ -960,6 +1005,10 @@ vlib_buffers_configure (vlib_main_t * vm, unformat_input_t * input)
+       else if (unformat (input, "default data-size %u",
+ 			 &bm->default_data_size))
+ 	;
++      else if (unformat (input, "layout natural"))
++	bm->layout = VLIB_BUFFER_LAYOUT_NATURAL;
++      else if (unformat (input, "layout packed"))
++	bm->layout = VLIB_BUFFER_LAYOUT_PACKED;
+       else if (unformat (input, "numa %u %U", &numa_node,
+ 			 unformat_vlib_cli_sub_input, &sub_input))
+ 	{
+diff --git a/src/vlib/buffer.h b/src/vlib/buffer.h
+index d6f62abd4..e4db532c2 100644
+--- a/src/vlib/buffer.h
++++ b/src/vlib/buffer.h
+@@ -457,6 +457,12 @@ typedef struct
+ 
+ #define VLIB_BUFFER_MAX_NUMA_NODES 32
+ 
++typedef enum
++{
++  VLIB_BUFFER_LAYOUT_PACKED,
++  VLIB_BUFFER_LAYOUT_NATURAL,
++} vlib_buffer_layout_t;
++
+ typedef u32 (vlib_buffer_alloc_free_callback_t) (struct vlib_main_t *vm,
+ 						 u8 buffer_pool_index,
+ 						 u32 *buffers, u32 n_buffers);
+@@ -481,6 +487,7 @@ typedef struct
+   u16 ext_hdr_size;
+   u32 default_data_size;
+   clib_mem_page_sz_t log2_page_size;
++  vlib_buffer_layout_t layout;
+ 
+   /* Hash table mapping buffer index into number
+      0 => allocated but free, 1 => allocated and not-free.
+diff --git a/src/vlib/config.h.in b/src/vlib/config.h.in
+index b233b327d..f69033985 100644
+--- a/src/vlib/config.h.in
++++ b/src/vlib/config.h.in
+@@ -18,6 +18,7 @@
+ 
+ #define VLIB_BUFFER_PRE_DATA_SIZE @PRE_DATA_SIZE@
+ #define VLIB_BUFFER_ALIGN @VLIB_BUFFER_ALIGN@
++#cmakedefine01 VLIB_BUFFER_NATURAL_ALIGN_DEFAULT
+ #define VLIB_BUFFER_ALLOC_FAULT_INJECTOR @BUFFER_ALLOC_FAULT_INJECTOR@
+ #define VLIB_PROCESS_LOG2_STACK_SIZE @VLIB_PROCESS_LOG2_STACK_SIZE@
+ 
+diff --git a/src/vlib/node_funcs.h b/src/vlib/node_funcs.h
+index 7d975c6a6..5c53a1edf 100644
+--- a/src/vlib/node_funcs.h
++++ b/src/vlib/node_funcs.h
+@@ -1128,7 +1128,7 @@ vlib_process_signal_event_at_time (vlib_main_t * vm,
+       ASSERT (te->n_data_elt_bytes == n_data_elt_bytes);
+       ASSERT (te->n_data_bytes == n_data_elts * n_data_elt_bytes);
+ 
+-      te->process_node_index = n->runtime_index;
++      te->process_node_index = n->index;
+       te->event_type_index = t;
+ 
+       p->stop_timer_handle =
+diff --git a/src/vpp/conf/startup.conf b/src/vpp/conf/startup.conf
+index 938869d61..f9acaf413 100644
+--- a/src/vpp/conf/startup.conf
++++ b/src/vpp/conf/startup.conf
+@@ -110,6 +110,10 @@ cpu {
+ 	## Default will try 'default-hugepage' then 'default'
+ 	## you can also pass a size in K/M/G e.g. '8M'
+ 	# page-size default-hugepage
++
++	## Buffer layout: natural or packed
++	## Default is platform-dependent
++	# layout packed
+ # }
+ 
+ # dsa {
+diff --git a/src/vppinfra/test/aes_cbc.c b/src/vppinfra/test/aes_cbc.c
+index be5f8fb17..5e2eb873f 100644
+--- a/src/vppinfra/test/aes_cbc.c
++++ b/src/vppinfra/test/aes_cbc.c
+@@ -58,29 +58,28 @@ static const u8 ciphertext256[64] = {
+   0xC3, 0x9B, 0xE9, 0xFC, 0xDA, 0x6C, 0x19, 0x07, 0x8C, 0x6A, 0x9D, 0x1B,
+ };
+ 
+-#define _(b)                                                                  \
+-  static clib_error_t *test_clib_aes##b##_cbc_encrypt (clib_error_t *err)     \
+-  {                                                                           \
+-    aes_cbc_key_data_t k;                                                     \
+-    u8 data[512];                                                             \
+-    clib_aes##b##_cbc_key_expand (&k, key##b);                                \
+-    clib_aes##b##_cbc_encrypt (&k, plaintext, sizeof (plaintext), iv, data);  \
+-    if (memcmp (ciphertext##b, data, sizeof (ciphertext##b)) != 0)            \
+-      err =                                                                   \
+-	clib_error_return (err, "encrypted data doesn't match plaintext");    \
+-    return err;                                                               \
+-  }                                                                           \
+-  void __test_perf_fn perftest_aes##b##_enc_var_sz (test_perf_t *tp)          \
+-  {                                                                           \
+-    u32 n = tp->n_ops;                                                        \
+-    aes_cbc_key_data_t *kd = test_mem_alloc (sizeof (*kd));                   \
+-    u8 *dst = test_mem_alloc (n + 16);                                        \
+-    u8 *src = test_mem_alloc_and_fill_inc_u8 (n + 16, 0, 0);                  \
+-    clib_aes##b##_cbc_key_expand (kd, key##b);                                \
+-                                                                              \
+-    test_perf_event_enable (tp);                                              \
+-    clib_aes##b##_cbc_encrypt (kd, src, n, iv, dst);                          \
+-    test_perf_event_disable (tp);                                             \
++#define _(b)                                                                                       \
++  static clib_error_t *test_clib_aes##b##_cbc_encrypt (clib_error_t *err)                          \
++  {                                                                                                \
++    aes_cbc_key_data_t k = {};                                                                     \
++    u8 data[512];                                                                                  \
++    clib_aes##b##_cbc_key_expand (&k, key##b);                                                     \
++    clib_aes##b##_cbc_encrypt (&k, plaintext, sizeof (plaintext), iv, data);                       \
++    if (memcmp (ciphertext##b, data, sizeof (ciphertext##b)) != 0)                                 \
++      err = clib_error_return (err, "encrypted data doesn't match plaintext");                     \
++    return err;                                                                                    \
++  }                                                                                                \
++  void __test_perf_fn perftest_aes##b##_enc_var_sz (test_perf_t *tp)                               \
++  {                                                                                                \
++    u32 n = tp->n_ops;                                                                             \
++    aes_cbc_key_data_t *kd = test_mem_alloc (sizeof (*kd));                                        \
++    u8 *dst = test_mem_alloc (n + 16);                                                             \
++    u8 *src = test_mem_alloc_and_fill_inc_u8 (n + 16, 0, 0);                                       \
++    clib_aes##b##_cbc_key_expand (kd, key##b);                                                     \
++                                                                                                   \
++    test_perf_event_enable (tp);                                                                   \
++    clib_aes##b##_cbc_encrypt (kd, src, n, iv, dst);                                               \
++    test_perf_event_disable (tp);                                                                  \
+   }
+ _ (128)
+ _ (192)
+@@ -120,30 +119,28 @@ REGISTER_TEST (clib_aes256_cbc_encrypt) = {
+ 			      .fn = perftest_aes256_enc_var_sz }),
+ };
+ 
+-#define _(b)                                                                  \
+-  static clib_error_t *test_clib_aes##b##_cbc_decrypt (clib_error_t *err)     \
+-  {                                                                           \
+-    aes_cbc_key_data_t k;                                                     \
+-    u8 data[512];                                                             \
+-    clib_aes##b##_cbc_key_expand (&k, key##b);                                \
+-    clib_aes##b##_cbc_decrypt (&k, ciphertext##b, sizeof (ciphertext##b), iv, \
+-			       data);                                         \
+-    if (memcmp (plaintext, data, sizeof (plaintext)) != 0)                    \
+-      err =                                                                   \
+-	clib_error_return (err, "decrypted data doesn't match plaintext");    \
+-    return err;                                                               \
+-  }                                                                           \
+-  void __test_perf_fn perftest_aes##b##_dec_var_sz (test_perf_t *tp)          \
+-  {                                                                           \
+-    u32 n = tp->n_ops;                                                        \
+-    aes_cbc_key_data_t *kd = test_mem_alloc (sizeof (*kd));                   \
+-    u8 *dst = test_mem_alloc (n + 16);                                        \
+-    u8 *src = test_mem_alloc_and_fill_inc_u8 (n + 16, 0, 0);                  \
+-    clib_aes##b##_cbc_key_expand (kd, key##b);                                \
+-                                                                              \
+-    test_perf_event_enable (tp);                                              \
+-    clib_aes##b##_cbc_decrypt (kd, src, n, iv, dst);                          \
+-    test_perf_event_disable (tp);                                             \
++#define _(b)                                                                                       \
++  static clib_error_t *test_clib_aes##b##_cbc_decrypt (clib_error_t *err)                          \
++  {                                                                                                \
++    aes_cbc_key_data_t k = {};                                                                     \
++    u8 data[512];                                                                                  \
++    clib_aes##b##_cbc_key_expand (&k, key##b);                                                     \
++    clib_aes##b##_cbc_decrypt (&k, ciphertext##b, sizeof (ciphertext##b), iv, data);               \
++    if (memcmp (plaintext, data, sizeof (plaintext)) != 0)                                         \
++      err = clib_error_return (err, "decrypted data doesn't match plaintext");                     \
++    return err;                                                                                    \
++  }                                                                                                \
++  void __test_perf_fn perftest_aes##b##_dec_var_sz (test_perf_t *tp)                               \
++  {                                                                                                \
++    u32 n = tp->n_ops;                                                                             \
++    aes_cbc_key_data_t *kd = test_mem_alloc (sizeof (*kd));                                        \
++    u8 *dst = test_mem_alloc (n + 16);                                                             \
++    u8 *src = test_mem_alloc_and_fill_inc_u8 (n + 16, 0, 0);                                       \
++    clib_aes##b##_cbc_key_expand (kd, key##b);                                                     \
++                                                                                                   \
++    test_perf_event_enable (tp);                                                                   \
++    clib_aes##b##_cbc_decrypt (kd, src, n, iv, dst);                                               \
++    test_perf_event_disable (tp);                                                                  \
+   }
+ 
+ _ (128)
+diff --git a/src/vppinfra/test/aes_ctr.c b/src/vppinfra/test/aes_ctr.c
+index 2892700fb..bd85a5804 100644
+--- a/src/vppinfra/test/aes_ctr.c
++++ b/src/vppinfra/test/aes_ctr.c
+@@ -356,8 +356,8 @@ static u64 inc_ct128[] = {
+ static clib_error_t *
+ test_clib_aes128_ctr (clib_error_t *err)
+ {
+-  aes_ctr_key_data_t kd;
+-  aes_ctr_ctx_t ctx;
++  aes_ctr_key_data_t kd = {};
++  aes_ctr_ctx_t ctx = {};
+   u8 pt[INC_TEST_BYTES];
+   u8 ct[INC_TEST_BYTES];
+ 
+@@ -408,7 +408,7 @@ REGISTER_TEST (clib_aes128_ctr) = {
+ static clib_error_t *
+ test_clib_aes192_ctr (clib_error_t *err)
+ {
+-  aes_ctr_key_data_t kd;
++  aes_ctr_key_data_t kd = {};
+   u8 ct[MAX_TEST_DATA_LEN];
+ 
+   FOREACH_ARRAY_ELT (tc, test_cases192)
+@@ -438,12 +438,12 @@ REGISTER_TEST (clib_aes192_ctr) = {
+ static clib_error_t *
+ test_clib_aes256_ctr (clib_error_t *err)
+ {
+-  aes_ctr_key_data_t kd;
++  aes_ctr_key_data_t kd = {};
+   u8 ct[MAX_TEST_DATA_LEN];
+ 
+   FOREACH_ARRAY_ELT (tc, test_cases256)
+     {
+-      aes_ctr_ctx_t ctx;
++      aes_ctr_ctx_t ctx = {};
+       u32 sz = tc->data_len / 3;
+ 
+       clib_aes_ctr_key_expand (&kd, tc->key, AES_KEY_256);
+diff --git a/src/vppinfra/test/aes_gcm.c b/src/vppinfra/test/aes_gcm.c
+index caa36b0f7..1909946d8 100644
+--- a/src/vppinfra/test/aes_gcm.c
++++ b/src/vppinfra/test/aes_gcm.c
+@@ -811,7 +811,7 @@ static const struct
+ static clib_error_t *
+ test_clib_aes128_gcm_enc (clib_error_t *err)
+ {
+-  aes_gcm_key_data_t kd;
++  aes_gcm_key_data_t kd = {};
+   u8 pt[MAX_TEST_DATA_LEN];
+   u8 ct[MAX_TEST_DATA_LEN];
+   u8 tag[16];
+@@ -861,7 +861,7 @@ REGISTER_TEST (clib_aes128_gcm_enc) = {
+ static clib_error_t *
+ test_clib_aes256_gcm_enc (clib_error_t *err)
+ {
+-  aes_gcm_key_data_t kd;
++  aes_gcm_key_data_t kd = {};
+   u8 pt[MAX_TEST_DATA_LEN];
+   u8 ct[MAX_TEST_DATA_LEN];
+   u8 tag[16];
+@@ -910,7 +910,7 @@ REGISTER_TEST (clib_aes256_gcm_enc) = {
+ static clib_error_t *
+ test_clib_aes128_gcm_dec (clib_error_t *err)
+ {
+-  aes_gcm_key_data_t kd;
++  aes_gcm_key_data_t kd = {};
+   u8 pt[MAX_TEST_DATA_LEN];
+   u8 ct[MAX_TEST_DATA_LEN];
+   u8 tag[16];
+@@ -963,7 +963,7 @@ REGISTER_TEST (clib_aes128_gcm_dec) = {
+ static clib_error_t *
+ test_clib_aes256_gcm_dec (clib_error_t *err)
+ {
+-  aes_gcm_key_data_t kd;
++  aes_gcm_key_data_t kd = {};
+   u8 pt[MAX_TEST_DATA_LEN];
+   u8 ct[MAX_TEST_DATA_LEN];
+   u8 tag[16];
+@@ -1081,7 +1081,7 @@ static clib_error_t *
+ test_clib_aes128_gmac (clib_error_t *err)
+ {
+   u8 data[MAX_TEST_DATA_LEN];
+-  aes_gcm_key_data_t kd;
++  aes_gcm_key_data_t kd = {};
+   u8 tag[16];
+ 
+   FOREACH_ARRAY_ELT (tc, gmac_test_cases)
+@@ -1139,7 +1139,7 @@ static clib_error_t *
+ test_clib_aes256_gmac (clib_error_t *err)
+ {
+   u8 data[MAX_TEST_DATA_LEN];
+-  aes_gcm_key_data_t kd;
++  aes_gcm_key_data_t kd = {};
+   u8 tag[16];
+ 
+ #if 0
+diff --git a/test/asf/test_adl.py b/test/asf/test_adl.py
+index 70d32bce9..ed1d13774 100644
+--- a/test/asf/test_adl.py
++++ b/test/asf/test_adl.py
+@@ -24,6 +24,21 @@ class TestAdl(VppAsfTestCase):
+     def tearDown(self):
+         super(TestAdl, self).tearDown()
+ 
++    def wait_for_err_counters(self, counters, timeout=5, interval=0.1):
++        remaining = timeout
++        values = {
++            counter: self.statistics.get_err_counter(counter) for counter in counters
++        }
++        while values != counters and remaining > 0:
++            self.sleep(interval, "wait for ADL counters")
++            remaining -= interval
++            values = {
++                counter: self.statistics.get_err_counter(counter)
++                for counter in counters
++            }
++
++        self.assertEqual(values, counters)
++
+     def test_adl1_unittest(self):
+         """Plugin API Test"""
+         cmds = [
+@@ -90,20 +105,13 @@ class TestAdl(VppAsfTestCase):
+                 else:
+                     self.logger.info(cmd + " FAIL retval " + str(r.retval))
+ 
+-        total_pkts = self.statistics.get_err_counter(
+-            "/err/adl-input/Allow/Deny packets processed"
+-        )
+-
+-        self.assertEqual(total_pkts, 200)
+-
+-        ip4_allow = self.statistics.get_err_counter(
+-            "/err/ip4-adl-allowlist/ip4 allowlist allowed"
+-        )
+-        self.assertEqual(ip4_allow, 12)
+-        ip6_allow = self.statistics.get_err_counter(
+-            "/err/ip6-adl-allowlist/ip6 allowlist allowed"
++        self.wait_for_err_counters(
++            {
++                "/err/adl-input/Allow/Deny packets processed": 200,
++                "/err/ip4-adl-allowlist/ip4 allowlist allowed": 12,
++                "/err/ip6-adl-allowlist/ip6 allowlist allowed": 50,
++            }
+         )
+-        self.assertEqual(ip6_allow, 50)
+ 
+ 
+ if __name__ == "__main__":
+diff --git a/test/asf/test_buffers.py b/test/asf/test_buffers.py
+index d22326f17..7d89b452b 100644
+--- a/test/asf/test_buffers.py
++++ b/test/asf/test_buffers.py
+@@ -27,3 +27,56 @@ class TestBuffers(VppAsfTestCase):
+         if error:
+             self.logger.critical(error)
+             self.assertNotIn("failed", error)
++
++
++def buffer_pool_config(layout):
++    return [
++        "buffers",
++        "{",
++        "layout",
++        layout,
++        "page-size",
++        "4k",
++        "buffers-per-numa",
++        "128",
++        "default",
++        "data-size",
++        "3072",
++        "}",
++    ]
++
++
++def buffer_pool_totals(test):
++    output = test.vapi.cli("show buffers")
++    totals = []
++
++    for line in output.splitlines():
++        fields = line.split()
++        if fields and fields[0].startswith("default-numa-"):
++            totals.append(int(fields[5]))
++
++    test.assertTrue(totals, "no default buffer pools found")
++    return totals
++
++
++class TestBufferPoolPackedLayout(VppAsfTestCase):
++    """Packed Buffer Pool Layout Tests"""
++
++    extra_vpp_config = buffer_pool_config("packed")
++
++    def test_4k_pages_large_buffers_are_not_underutilized(self):
++        """4K pages with large buffers populate one buffer per page"""
++        for total in buffer_pool_totals(self):
++            self.assertGreaterEqual(total, 127)
++
++
++class TestBufferPoolNaturalLayout(VppAsfTestCase):
++    """Natural Buffer Pool Layout Tests"""
++
++    extra_vpp_config = buffer_pool_config("natural")
++
++    def test_4k_pages_preserve_natural_alignment(self):
++        """Natural layout skips globally aligned buffers spanning pages"""
++        for total in buffer_pool_totals(self):
++            self.assertGreater(total, 0)
++            self.assertLess(total, 127)
