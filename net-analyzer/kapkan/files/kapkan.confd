@@ -1,0 +1,17 @@
+# Configuration file
+# KAPKAN_CONFIG=/etc/kapkan/${instance_name:-config}.yml
+
+# Mode:
+# - (empty)			normal operation
+# - scrub           run the scrub-node role: pull the brain's rule table and enforce it
+#                   in the local XDP data plane. Run "kapkan scrub -h" for its flags.
+# - nginx-exporter  tail an nginx JSON access log and post per-source verdicts to the
+#                   brain's source-block API. Run "kapkan nginx-exporter -h" for its flags.
+# KAPKAN_MODE=
+
+# Logging to file (default), empty value disables logging
+# output_log="/var/log/kapkan/${RC_SVCNAME}.log"
+# error_log="/var/log/kapkan/${RC_SVCNAME}.log"
+# or use logger (uncomment)
+# output_logger="logger -p daemon.info -t "${RC_SVCNAME}" --"
+# error_logger="logger -p daemon.err -t "${RC_SVCNAME}" --"

@@ -1,0 +1,65 @@
+#!/sbin/openrc-run
+# Copyright 2026 Gentoo Authors
+# Distributed under the terms of the GNU General Public License v2
+
+INSTANCE="${RC_SVCNAME#*[.-]}"
+
+if [ -n "${INSTANCE}" ] && [ "${INSTANCE}" != "${RC_SVCNAME}" ]; then
+	: ${KAPKAN_CONFIG:=/etc/kapkan/${INSTANCE}.yaml}
+else
+	: ${KAPKAN_CONFIG:=/etc/kapkan/config.yaml}
+fi
+
+PIDFILE="/run/kapkan/${RC_SVCNAME}.pid"
+
+name="kapkan daemon"
+description="DDoS detection and mitigation daemon"
+command=/usr/bin/kapkan
+command_args="${KAPKAN_MODE} -config ${KAPKAN_CONFIG} -pid-file ${PIDFILE} ${kapkan_args}"
+supervisor="${supervisor:-supervise-daemon}"
+required_files="${KAPKAN_CONFIG}"
+
+extra_started_commands="reload"
+extra_commands="xdp checkconfig"
+
+description_checkconfig="Run kapkan's internal config check."
+description_reload="Send configuration reload request to the deamon."
+description_xdp="Run kapkan dataplane status."
+
+if [ -z "${output_logger}" ] && [ -z "${output_log+set}" ]; then
+	output_log="/var/log/kapkan/${RC_SVCNAME}.log"
+fi
+if [ -z "${error_logger}" ] && [ -z "${error_log+set}" ]; then
+	error_log="/var/log/kapkan/${RC_SVCNAME}.log"
+fi
+
+depend() {
+	use net logger
+}
+
+checkconfig() {
+	${command} -check-config "${KAPKAN_CONFIG}" 1>/dev/null
+	eend $? "Config check failed."
+}
+
+reload() {
+	checkconfig || return 1
+	${command} -pid-file "${PIDFILE}" -s reload
+}
+
+xdp() {
+	${command} -config "${KAPKAN_CONFIG}" dataplane status
+}
+
+start_pre() {
+	checkconfig || return 1
+
+	checkpath -q -d -m 0755 "${command_user:+-o "${command_user}"}" /var/run/kapkan
+
+	if [ -n "${error_log}" ] && [ ! -e "${error_log}" ]; then
+		checkpath -d "$(dirname "${error_log}")" ${command_user:+-o "${command_user}"}
+	fi
+	if [ -n "${output_log}" ] && [ ! -e "${output_log}" ]; then
+		checkpath -d "$(dirname "${output_log}")" ${command_user:+-o "${command_user}"}
+	fi
+}
