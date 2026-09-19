@@ -54,7 +54,8 @@ xdp() {
 start_pre() {
 	checkconfig || return 1
 
-	checkpath -q -d -m 0755 "${command_user:+-o "${command_user}"}" /var/run/kapkan
+	checkpath -q -d -m 0755 ${command_user:+-o "${command_user}"} /var/run/kapkan
+	checkpath -q -d -m 0755 ${command_user:+-o "${command_user}"} /var/lib/kapkan
 
 	if [ -n "${error_log}" ] && [ ! -e "${error_log}" ]; then
 		checkpath -d "$(dirname "${error_log}")" ${command_user:+-o "${command_user}"}

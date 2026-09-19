@@ -11,9 +11,9 @@ SRC_URI="https://github.com/fornex/kapkan/archive/refs/tags/v${PV}.tar.gz -> ${P
 SRC_URI+=" https://download.jkns.pl/gentoo/${P}-vendor.tar.xz"
 
 # git rev-parse --short=12 HEAD
-GIT_COMMIT="ed89ef770f36"
+GIT_COMMIT="0165316606d4"
 # git show -s --format=%cI HEAD
-GIT_DATE="2026-09-02T10:13:42+03:00"
+GIT_DATE="2026-09-18T17:24:22+03:00"
 
 LICENSE="Apache-2.0 BSD-2 BSD ISC MIT MPL-2.0"
 SLOT="0"
