@@ -1,0 +1,39 @@
+#!/sbin/openrc-run
+# Copyright 2026 Gentoo Authors
+# Distributed under the terms of the GNU General Public License v2
+
+: ${STALWART_CONFIG:=/etc/stalwart/config.json}
+: ${STALWART_PATH:=/var/lib/stalwart}
+
+required_files="${STALWART_CONFIG}"
+
+name="Stalwart mail server"
+
+command="/usr/bin/stalwart"
+command_args="--config ${STALWART_CONFIG}"
+command_user="stalwart-mail:stalwart-mail"
+command_background="yes"
+start_stop_daemon_args="--env STALWART_PATH='${STALWART_PATH}'"
+
+output_logger="logger -p daemon.info -t ${RC_SVCNAME} --"
+error_logger="logger -p daemon.err -t ${RC_SVCNAME} --"
+
+pidfile="/run/${RC_SVCNAME}.pid"
+capabilities="^cap_net_bind_service"
+
+# Detect crashes, typically permission related
+start_stop_daemon_args="--wait 500"
+
+
+depend() {
+	need net
+	use postgresql mysql redis
+	before provide mta
+}
+
+
+start_pre() {
+    checkpath -d -m 750 -o "${command_user}" "${STALWART_PATH}"
+    checkpath -d -m 750 -o "${command_user}" "${STALWART_PATH}/webui"
+    checkpath -d -m 755 -o "${command_user}" "/var/log/stalwart"
+}

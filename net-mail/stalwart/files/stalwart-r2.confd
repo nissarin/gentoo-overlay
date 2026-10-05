@@ -1,0 +1,20 @@
+# Main configuration file, created at bootstrap.
+# STALWART_CONFIG=/etc/stalwart/config.json
+
+# This directory contains application state.
+# It should match what is set in configuration file above.
+# STALWART_PATH=/var/lib/stalwart
+
+# The full base URL clients reach the server on
+# STALWART_PUBLIC_URL=
+
+# Override the hostname used in HTTP responses
+# STALWART_HOSTNAME=
+
+# Cluster role assigned to this node. Must match a role name defined in the
+# cluster registry. Leave unset for a standalone (non-clustered) deployment.
+# STALWART_ROLE=primary
+
+# Push-notification shard this node is responsible for, when running in a
+# cluster.
+# STALWART_PUSH_SHARD=1
