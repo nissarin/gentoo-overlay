@@ -1,3 +1,12 @@
+# HTTP listen address
+# BIRD_EXPORTER_LISTEN=":9324"
+
+# Bird deamon control socket
+# BIRD_EXPORTER_PATH="/metrics"
+
+# Bird deamon control socket
+# BIRD_EXPORTER_SOCKET="/var/run/bird.ctl"
+
 # Enables metrics for protocol BGP
 # BIRD_EXPORTER_BGP=1
 
@@ -21,9 +30,3 @@
 
 # Enables metrics for protocol BFD
 # BIRD_EXPORTER_BFD=1
-
-# HTTP listen address
-# BIRD_EXPORTER_LISTEN=":9324"
-
-# Bird deamon control socket
-# BIRD_EXPORTER_SOCKET="/var/run/bird.ctl"

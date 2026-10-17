@@ -9,6 +9,9 @@ description="Prometheus exporter for bird routing daemon "
 command=/usr/bin/bird_exporter
 command_args="
 	${bird_exporter_args:--bird.v2}
+	${BIRD_EXPORTER_LISTEN:+-web.listen-address="${BIRD_EXPORTER_LISTEN}"}
+	${BIRD_EXPORTER_PATH:+-web.telemetry-path="${BIRD_EXPORTER_PATH}"}
+	${BIRD_EXPORTER_SOCKET:+-bird.socket="${BIRD_EXPORTER_SOCKET}"}
 	${BIRD_EXPORTER_BGP:+-proto.bgp=${BIRD_EXPORTER_BGP}}
 	${BIRD_EXPORTER_OSPF:+-proto.ospf=${BIRD_EXPORTER_OSPF}}
 	${BIRD_EXPORTER_KERNEL:+-proto.kernel=${BIRD_EXPORTER_KERNEL}}
@@ -17,8 +20,6 @@ command_args="
 	${BIRD_EXPORTER_BABEL:+-proto.babel=${BIRD_EXPORTER_BABEL}}
 	${BIRD_EXPORTER_RPKI:+-proto.rpki=${BIRD_EXPORTER_RPKI}}
 	${BIRD_EXPORTER_BFD:+-proto.bfd=${BIRD_EXPORTER_BFD}}
-	${BIRD_EXPORTER_LISTEN:+-web.listen-address="${BIRD_EXPORTER_LISTEN}"}
-	${BIRD_EXPORTER_SOCKET:+-bird.socket="${BIRD_EXPORTER_SOCKET}"}
 "
 supervisor="${supervisor:-supervise-daemon}"
 
