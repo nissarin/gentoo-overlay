@@ -1,0 +1,25 @@
+#!/sbin/openrc-run
+# Copyright 2026 Gentoo Authors
+# Distributed under the terms of the GNU General Public License v2
+
+: ${LOGCHEF_CONFIG:=/etc/logchef/config.toml}
+
+required_files="${LOGCHEF_CONFIG}"
+
+name="logchef"
+description="Log analytics for ClickHouse and VictoriaLogs"
+command="/usr/bin/logchef"
+command_args="-config ${LOGCHEF_CONFIG}"
+command_background="yes"
+command_user="logchef:logchef"
+start_stop_daemon_args="--wait 500"
+directory="/var/lib/logchef"
+pidfile="/run/${RC_SVCNAME}.pid"
+
+depend() {
+	need net
+}
+
+start_pre() {
+    checkpath -f -m 600 -o "${command_user}" "${LOGCHEF_CONFIG}"
+}
