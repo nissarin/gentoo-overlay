@@ -1,0 +1,20 @@
+# Addresses to listen for incoming http requests
+# VL_HTTP_LISTEN_ADDR=":9428"
+
+# Log entries with timestamps older than now-retentionPeriod are automatically deleted.
+# The following optional suffixes are supported: 
+# s (second), h (hour), d (day), w (week), M (month), y (year). 
+# If suffix isn't set, then the duration is counted in months
+# VL_RETENTION_PERIOD="4w"
+
+# Path to directory where to store VictoriaLogs data
+# VL_STORAGE_PATH="/var/log/victoria-logs"
+
+# Additional arguments
+VL_ARGS=
+
+# Limit the number of OS threads used by program, defaults to number of logical
+# cores available or corresponding limit imposed by cgroups' cpuset, although 
+# actual number of threads used might be higher. 
+# Consider using rc_cgroup_settings="cpuset.cpus=..." if that's an issue.
+# GOMAXPROCS=

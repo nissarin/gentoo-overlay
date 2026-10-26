@@ -1,0 +1,36 @@
+#!/sbin/openrc-run
+# Copyright 2026 Gentoo Authors
+# Distributed under the terms of the GNU General Public License v2
+
+: ${VL_TMP_DATAPATH:=/var/tmp/${RC_SVCNAME}}
+
+VL_ARGS="
+	${VL_ARGS}
+	${VL_HTTP_LISTEN_ADDR:+-httpListenAddr=\"${VL_HTTP_LISTEN_ADDR}\"}
+	${VL_TMP_DATAPATH:+-remoteWrite.tmpDataPath=\"${VL_TMP_DATAPATH}\"}
+"
+
+for url in ${VL_REMOTE_URL}; do
+	VL_ARGS="${VL_ARGS} -remoteWrite.url=\"${url}\""
+done
+
+name="vlagent daemon"
+description="vlagent is an agent for collecting logs"
+command=/usr/bin/vlagent
+command_args="${VL_ARGS} ${vlagent_args}"
+command_user="victoria-logs:victoria-logs"
+command_background=yes
+pidfile="/run/${RC_SVCNAME}"
+
+start_stop_daemon_args="${GOMAXPROCS:+--env GOMAXPROCS=${GOMAXPROCS}} --wait 500"
+supervise_daemon_args="${GOMAXPROCS:+--env GOMAXPROCS=${GOMAXPROCS}}"
+
+depend() {
+	need net
+}
+
+start_pre() {
+	if [ -n "${VL_TMP_DATAPATH}" ]; then
+		checkpath -q -d -o "${command_user}" "${VL_TMP_DATAPATH}"
+	fi
+}

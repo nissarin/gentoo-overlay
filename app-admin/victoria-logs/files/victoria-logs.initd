@@ -1,0 +1,28 @@
+#!/sbin/openrc-run
+# Copyright 2026 Gentoo Authors
+# Distributed under the terms of the GNU General Public License v2
+
+: ${VL_STORAGE_PATH:=/var/lib/victoria-logs}
+: ${VL_RETENTION_PERIOD:=4w}
+
+VL_ARGS="
+	${VL_ARGS}
+	${VL_HTTP_LISTEN_ADDR:+-httpListenAddr=\"${VL_HTTP_LISTEN_ADDR}\"}
+	-storageDataPath=\"${VL_STORAGE_PATH}\"
+	-retentionPeriod=\"${VL_RETENTION_PERIOD}\"
+"
+
+name="victoria-logs daemon"
+description="A database for logs"
+command=/usr/bin/victoria-logs
+command_args="${VL_ARGS} ${victoria_logs_args}"
+command_user="victoria-logs:victoria-logs"
+command_background=yes
+pidfile="/run/${RC_SVCNAME}"
+
+start_stop_daemon_args="${GOMAXPROCS:+--env GOMAXPROCS=${GOMAXPROCS}} --wait 500"
+supervise_daemon_args="${GOMAXPROCS:+--env GOMAXPROCS=${GOMAXPROCS}}"
+
+depend() {
+	need net
+}

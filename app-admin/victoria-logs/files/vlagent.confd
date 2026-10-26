@@ -1,0 +1,18 @@
+# Addresses to listen for incoming http requests
+# VL_HTTP_LISTEN_ADDRS=":9429"
+
+# Base directory for storing vlagent data
+# VL_TMP_DATAPATH="/var/tmp/vlagent"
+
+# List of remote storage URL to write data to. 
+# Example url: http://<victorialogs-host>:9428/insert/native
+# VL_REMOTE_URLS=
+
+# Additional arguments
+VL_ARGS=
+
+# Limit the number of OS threads used by program, defaults to number of logical
+# cores available or corresponding limit imposed by cgroups' cpuset, although 
+# actual number of threads used might be higher. 
+# Consider using rc_cgroup_settings="cpuset.cpus=..." if that's an issue.
+# GOMAXPROCS=
