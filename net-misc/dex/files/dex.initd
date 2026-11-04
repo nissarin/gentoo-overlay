@@ -1,0 +1,18 @@
+#!/sbin/openrc-run
+# Copyright 2026 Gentoo Authors
+# Distributed under the terms of the GNU General Public License v2
+
+: ${DEX_CONFIG:=/etc/dex/config.yaml}
+
+name="dex"
+description="Federated OpenID Connect identity service"
+command=/usr/bin/dex
+command_args="serve ${dex_args} ${DEX_CONFIG}"
+command_background="yes"
+required_files="${DEX_CONFIG}"
+pidfile="/run/${RC_SVCNAME}.pid"
+
+
+depend() {
+	need net
+}
