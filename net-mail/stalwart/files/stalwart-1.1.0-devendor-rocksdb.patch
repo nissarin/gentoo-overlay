@@ -1,0 +1,23 @@
+diff --git a/Cargo.lock b/Cargo.lock
+index e927c387..4a306ba5 100644
+--- a/Cargo.lock
++++ b/Cargo.lock
+@@ -3770,7 +3770,8 @@ dependencies = [
+ [[package]]
+ name = "librocksdb-sys"
+ version = "0.19.0+11.8.1"
+-source = "git+https://github.com/stalwartlabs/rust-rocksdb?branch=stalwart%2F0.25#f6169ca36d74c15637f8c6396c34e82aa73d0d47"
++source = "registry+https://github.com/rust-lang/crates.io-index"
++checksum = "4f45e86edad8e88efe97dbf384b4e48e1ff0f111eabf154c7b09d7a1e5fb573c"
+ dependencies = [
+  "bindgen",
+  "bzip2-sys",
+diff --git a/Cargo.toml b/Cargo.toml
+index 5dc77de3..83d4d933 100644
+--- a/Cargo.toml
++++ b/Cargo.toml
+@@ -137,4 +137,3 @@ rpath = false
+ hickory-proto = { git = "https://github.com/stalwartlabs/hickory-dns", branch = "stalwart/0.26" }
+ hickory-net = { git = "https://github.com/stalwartlabs/hickory-dns", branch = "stalwart/0.26" }
+ hickory-resolver = { git = "https://github.com/stalwartlabs/hickory-dns", branch = "stalwart/0.26" }
+-librocksdb-sys = { git = "https://github.com/stalwartlabs/rust-rocksdb", branch = "stalwart/0.25" }
