@@ -1,0 +1,43 @@
+#!/sbin/openrc-run
+# Copyright 2026 Gentoo Authors
+# Distributed under the terms of the GNU General Public License v2
+
+: ${RAUTHY_CONFIG:=/etc/rauthy/config.toml}
+: ${RAUTHY_SECRETS:=/etc/rauthy/secrets.toml}
+
+name="rauthy daemon"
+description="Single Sign-On Identity & Access Management"
+command=/usr/bin/rauthy
+command_args="serve --config-file ${RAUTHY_CONFIG} --secrets-file ${RAUTHY_SECRETS}"
+command_background=yes
+command_user="rauthy:rauthy"
+required_files="${RAUTHY_CONFIG}"
+extra_commands="checkconfig"
+directory="/var/lib/rauthy"
+pidfile="/run/${RC_SVCNAME}.pid"
+output_logger="logger -p daemon.info -t ${RC_SVCNAME} --"
+error_logger="logger -p daemon.err -t ${RC_SVCNAME} --"
+
+depend() {
+    need net
+}
+
+
+checkconfig() {
+    # Wrapped to discard annoying 'XXX Aborted' message on error
+    if ! (${command} validate-config --path "${RAUTHY_CONFIG}" || false) >/dev/null 2>&1; then
+        eerror "Config check failed"
+        return 1
+    fi
+}
+
+
+start_pre() {
+    checkpath -f -m 600 -o "${command_user}" "${RAUTHY_CONFIG}"
+
+    if [ -e "${RAUTHY_SECRETS}" ]; then
+        checkpath -f -m 600 -o "${command_user}" "${RAUTHY_SECRETS}"
+    fi
+
+    checkconfig || return 1
+}

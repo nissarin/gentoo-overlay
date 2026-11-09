@@ -1,0 +1,5 @@
+# Configuration file
+# RAUTHY_CONFIG=/etc/rauthy/config.toml
+
+# Secrets file
+# RAUTHY_SECRETS=/etc/rauthy/secrets.toml
