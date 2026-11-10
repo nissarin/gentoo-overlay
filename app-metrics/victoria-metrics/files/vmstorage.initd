@@ -5,6 +5,7 @@ description="Victoria Metrics storage service"
 
 : ${VM_RETENTION_PERIOD:=3M}
 : ${VM_STORAGE_PATH:=/var/lib/victoria-metrics/"${RC_SVCNAME}"}
+: ${rc_ulimit:=-n 65535}
 
 VM_ARGS="
 	-storageDataPath=\"${VM_STORAGE_PATH}\"
