@@ -1,0 +1,26 @@
+#!/sbin/openrc-run
+# Copyright 2026 Gentoo Authors
+# Distributed under the terms of the GNU General Public License v2
+
+: ${STEP_PATH:=/var/lib/step-ca}
+: ${STEP_CONFIG:=${STEP_PATH}/config/ca.json}
+: ${STEP_PASSWORD_FILE:=${STEP_PATH}/password}
+
+
+name="step-ca daemon"
+description="An online certificate authority"
+command=/usr/bin/step-ca
+command_args="${STEP_CONFIG} --password-file ${STEP_PASSWORD_FILE} ${step_ca_args}"
+command_background=yes
+command_user="step-ca:step-ca"
+start_stop_daemon_args="--env STEPPATH=${STEP_PATH}"
+required_files="${STEP_CONFIG} ${STEP_PASSWORD_FILE}"
+directory="/var/lib/step-ca"
+pidfile="/run/${RC_SVCNAME}.pid"
+
+output_logger="logger -p daemon.info -t ${RC_SVCNAME} --"
+error_logger="logger -p daemon.err -t ${RC_SVCNAME} --"
+
+depend() {
+	need net
+}
