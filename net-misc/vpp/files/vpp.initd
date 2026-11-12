@@ -12,7 +12,7 @@ description="Vector packet processing engine"
 command=/usr/bin/vpp
 command_background="true"
 command_args="${vpp_args} -c ${VPP_CONFIG}"
-start_stop_daemon_args="--wait 5000"
+start_stop_daemon_args="--wait 1000"
 required_files="${VPP_CONFIG}"
 pidfile="/run/${RC_SVCNAME}.pid"
 
